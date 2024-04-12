@@ -6,16 +6,19 @@ import numpy as np
 import cv2
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QDialog, QMessageBox, QLineEdit
+from PyQt5.QtCore import QTimer, QDateTime
+from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QDialog, QMessageBox, QLineEdit, QAbstractItemView
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5.QtGui import QImage, QPixmap
 from myDesign_win.home import Ui_MainWindow
 
 QtCore.QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
 
+
 class DetThread(QThread):
     send_img = pyqtSignal(np.ndarray)
+    send_curTime = pyqtSignal(str)
+    Timer = QTimer()  # 自定义QTimer类
 
     def __init__(self):
         super(DetThread, self).__init__()
@@ -30,11 +33,19 @@ class DetThread(QThread):
             if not ret:
                 print('Error: 无法读取帧')
                 break
+            self.updateTime()
             self.send_img.emit(frame)
 
     def quit(self) -> None:
         self.cap.release()
         super().quit()
+
+    def updateTime(self):
+        time = QDateTime.currentDateTime()  # 获取现在的时间
+        # timeplay = time.toString('yyyy-MM-dd hh:mm:ss dddd')  # 设置显示时间的格式
+        timeplay = time.toString('yyyy-MM-dd hh:mm:ss')  # 设置显示时间的格式
+        print(timeplay)
+        self.send_curTime.emit(timeplay)
 
 
 class MainWindow(QMainWindow):
@@ -53,9 +64,15 @@ class MainWindow(QMainWindow):
         self.ui.page3Button.clicked.connect(lambda: self.gotoBlock(2))
         self.ui.page4Button.clicked.connect(lambda: self.gotoBlock(3))
         self.ui.page5Button.clicked.connect(lambda: self.gotoBlock(4))
+        self.ui.tableWidget.verticalHeader().setDefaultSectionSize(32)
+        self.ui.tableWidget.horizontalHeader().setDefaultSectionSize(160)
+        self.ui.tableWidget.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.ui.tableWidget.setSelectionBehavior(QAbstractItemView.SelectRows)
+        # self.ui.tableWidget.setSelectionMode(QAbstractItemView.NoSelection)
 
         self.detThread = DetThread()
         self.detThread.send_img.connect(lambda x: self.show_video(x, self.ui.out_video))
+        self.detThread.send_curTime.connect(lambda x: self.ui.curTimeLabel.setText(x))
         self.detThread.start()
 
     def myClose(self):
@@ -73,6 +90,31 @@ class MainWindow(QMainWindow):
             self.showNormal()
             self.isMaxi = False
 
+    def pageCount(self) -> int:
+        rowCount = self.ui.tableWidget.model().rowCount()
+        rowHeight = self.ui.tableWidget.rowHeight(0)
+        tableViewHeight = self.ui.tableWidget.height()
+        rowCountPerPage = tableViewHeight / rowHeight - 1
+        ret = rowCount / rowCountPerPage
+        tem = rowCount % rowCountPerPage
+        if tem != 0:
+            ret += 1
+        return ret
+
+    def toPage(self, pageNo: int):
+        maxPage = self.pageCount()
+        if pageNo <= maxPage:
+            rowCount = self.ui.tableWidget.model().rowCount()
+            rowHeight = self.ui.tableWidget.rowHeight(0)
+            tableViewHeight = self.ui.tableWidget.height()
+            rowCountPerPage = tableViewHeight / rowHeight - 1
+            canNotViewCount = rowCount - rowCountPerPage
+            if canNotViewCount == 0:
+                return
+            maxValue = self.ui.tableWidget.verticalScrollBar().maximum()
+
+
+    # 628×471
     @staticmethod
     def show_video(img_src, label):
         try:
@@ -85,12 +127,14 @@ class MainWindow(QMainWindow):
                 nw = w
                 nh = int(scal * ih)
                 img_src_ = cv2.resize(img_src, (nw, nh))
+                # print(f'宽: {nw} 高: {nh}')
 
             else:
                 scal = h / ih
                 nw = int(scal * iw)
                 nh = h
                 img_src_ = cv2.resize(img_src, (nw, nh))
+                # print(f'宽: {nw} 高: {nh}')
 
             frame = cv2.cvtColor(img_src_, cv2.COLOR_BGR2RGB)
             img = QImage(frame.data, frame.shape[1], frame.shape[0], frame.shape[2] * frame.shape[1],
