@@ -31,8 +31,8 @@ class DetThread(QThread):
         folder_count = 1
         while os.path.exists(os.path.join(self.save_folder, str(folder_count))):
             folder_count += 1
-        save_folder = os.path.join(self.save_folder, str(folder_count))
-        os.makedirs(save_folder)
+        self.save_folder = os.path.join(self.save_folder, str(folder_count))
+        os.makedirs(self.save_folder)
 
     def run(self):
         self.cap = cv2.VideoCapture(self.source)
@@ -58,6 +58,9 @@ class DetThread(QThread):
 
                 # 在帧上可视化结果
                 annotated_frame = results[0].plot()
+
+                # 保存视频帧
+                cv2.imwrite(os.path.join(self.save_folder, f'{frame_count}.jpg'), annotated_frame)
 
                 # 写入视频
                 self.out.write(annotated_frame)
