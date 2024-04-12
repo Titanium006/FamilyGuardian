@@ -113,6 +113,23 @@ class MainWindow(QMainWindow):
                 return
             maxValue = self.ui.tableWidget.verticalScrollBar().maximum()
 
+    def pageUp(self):
+        rowCount = self.ui.tableWidget.model().rowCount()
+        rowHeight = self.ui.tableWidget.rowHeight(0)
+        tableViewHeight = self.ui.tableWidget.height()
+        rowCountPerPage = tableViewHeight / rowHeight - 1
+        canNotViewCount = rowCount - rowCountPerPage
+        if canNotViewCount == 0:
+            return
+        maxValue = self.ui.tableWidget.verticalScrollBar().maximum()
+        if maxValue == 0:
+            return
+        pageValue = (maxValue * rowCountPerPage) / canNotViewCount
+        nCurScroller = self.ui.tableWidget.verticalScrollBar().value()
+        if nCurScroller > 0:
+            self.ui.tableWidget.verticalScrollBar().setSliderPosition(nCurScroller - pageValue)
+        else:
+            self.ui.tableWidget.verticalScrollBar().setSliderPosition(maxValue)
 
     # 628×471
     @staticmethod
