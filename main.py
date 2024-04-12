@@ -12,6 +12,8 @@ from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5.QtGui import QImage, QPixmap
 from myDesign_win.home import Ui_MainWindow
 
+from ultralytics import YOLO
+
 QtCore.QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
 
 
@@ -23,21 +25,65 @@ class DetThread(QThread):
     def __init__(self):
         super(DetThread, self).__init__()
         self.source = 0
+        self.model = YOLO('./pt/best.pt')
+        self.save_folder = './detect_results/'
+        os.makedirs(self.save_folder, exist_ok=True)
+        folder_count = 1
+        while os.path.exists(os.path.join(self.save_folder, str(folder_count))):
+            folder_count += 1
+        save_folder = os.path.join(self.save_folder, str(folder_count))
+        os.makedirs(save_folder)
 
     def run(self):
         self.cap = cv2.VideoCapture(self.source)
-        if not self.cap.isOpened():
-            print("Error: 无法打开摄像头")
-        while True:
-            ret, frame = self.cap.read()
-            if not ret:
-                print('Error: 无法读取帧')
+        # 视频帧计数器
+        frame_count = 0
+
+        # 视频帧宽高
+        frame_width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        frame_height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+        # 视频帧写入对象
+        self.out = cv2.VideoWriter(os.path.join(self.save_folder, 'output.mp4'), cv2.VideoWriter_fourcc(*'XVID'), 30,
+                                   (frame_width, frame_height))
+
+        # 遍历视频帧
+        while self.cap.isOpened():
+            # 从视频中读取一帧
+            success, frame = self.cap.read()
+
+            if success:
+                # 在该帧上运行YOLOv8推理
+                results = self.model(frame)
+
+                # 在帧上可视化结果
+                annotated_frame = results[0].plot()
+
+                # 写入视频
+                self.out.write(annotated_frame)
+
+                self.updateTime()
+                self.send_img.emit(annotated_frame)
+
+                # 计数器自增
+                frame_count += 1
+            else:
+                # 如果视频结束则中断循环
                 break
-            self.updateTime()
-            self.send_img.emit(frame)
+
+        # if not self.cap.isOpened():
+        #     print("Error: 无法打开摄像头")
+        # while True:
+        #     ret, frame = self.cap.read()
+        #     if not ret:
+        #         print('Error: 无法读取帧')
+        #         break
+        #     self.updateTime()
+        #     self.send_img.emit(frame)
 
     def quit(self) -> None:
         self.cap.release()
+        self.out.release()
         super().quit()
 
     def updateTime(self):
@@ -139,7 +185,7 @@ class MainWindow(QMainWindow):
             w = label.geometry().width()
             h = label.geometry().height()
             # keep original aspect ratio
-            if iw/w > ih/h:
+            if iw / w > ih / h:
                 scal = w / iw
                 nw = w
                 nh = int(scal * ih)
