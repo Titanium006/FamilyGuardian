@@ -59,8 +59,8 @@ class DetThread(QThread):
                 # 在帧上可视化结果
                 annotated_frame = results[0].plot()
 
-                # 保存视频帧
-                cv2.imwrite(os.path.join(self.save_folder, f'{frame_count}.jpg'), annotated_frame)
+                # # 保存视频帧
+                # cv2.imwrite(os.path.join(self.save_folder, f'{frame_count}.jpg'), annotated_frame)
 
                 # 写入视频
                 self.out.write(annotated_frame)
@@ -104,7 +104,7 @@ class MainWindow(QMainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.ui.setupUi(self)
-        self.ui.closeButton.clicked.connect(self.close)
+        self.ui.closeButton.clicked.connect(self.myClose)
         self.ui.miniButton.clicked.connect(self.showMinimized)
         self.ui.maxiButton.clicked.connect(self.maxOrRestore)
         self.setWindowFlag(Qt.FramelessWindowHint)
