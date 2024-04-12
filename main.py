@@ -35,58 +35,49 @@ class DetThread(QThread):
         os.makedirs(self.save_folder)
 
     def run(self):
-        self.cap = cv2.VideoCapture(self.source)
-        # 视频帧计数器
-        frame_count = 0
-
-        # 视频帧宽高
-        frame_width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        frame_height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-
-        # 视频帧写入对象
-        self.out = cv2.VideoWriter(os.path.join(self.save_folder, 'output.mp4'), cv2.VideoWriter_fourcc(*'XVID'), 30,
-                                   (frame_width, frame_height))
-
-        # 遍历视频帧
-        while self.cap.isOpened():
-            # 从视频中读取一帧
-            success, frame = self.cap.read()
-
-            if success:
-                # 在该帧上运行YOLOv8推理
-                results = self.model(frame)
-
-                # 在帧上可视化结果
-                annotated_frame = results[0].plot()
-
-                # # 保存视频帧
-                # cv2.imwrite(os.path.join(self.save_folder, f'{frame_count}.jpg'), annotated_frame)
-
-                # 写入视频
-                self.out.write(annotated_frame)
-
-                self.updateTime()
-                self.send_img.emit(annotated_frame)
-
-                # 计数器自增
-                frame_count += 1
-            else:
-                # 如果视频结束则中断循环
-                break
-
-        # if not self.cap.isOpened():
-        #     print("Error: 无法打开摄像头")
-        # while True:
-        #     ret, frame = self.cap.read()
-        #     if not ret:
-        #         print('Error: 无法读取帧')
+        # self.cap = cv2.VideoCapture(self.source)
+        # # 视频帧计数器
+        # frame_count = 0
+        #
+        # # 视频帧宽高
+        # frame_width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        # frame_height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        #
+        # # 视频帧写入对象
+        # self.out = cv2.VideoWriter(os.path.join(self.save_folder, 'output.mp4'), cv2.VideoWriter_fourcc(*'XVID'), 30,
+        #                            (frame_width, frame_height))
+        #
+        # # 遍历视频帧
+        # while self.cap.isOpened():
+        #     # 从视频中读取一帧
+        #     success, frame = self.cap.read()
+        #
+        #     if success:
+        #         # 在该帧上运行YOLOv8推理
+        #         results = self.model(frame)
+        #
+        #         # 在帧上可视化结果
+        #         annotated_frame = results[0].plot()
+        #
+        #         # # 保存视频帧
+        #         # cv2.imwrite(os.path.join(self.save_folder, f'{frame_count}.jpg'), annotated_frame)
+        #
+        #         # 写入视频
+        #         self.out.write(annotated_frame)
+        #
+        #         self.updateTime()
+        #         self.send_img.emit(annotated_frame)
+        #
+        #         # 计数器自增
+        #         frame_count += 1
+        #     else:
+        #         # 如果视频结束则中断循环
         #         break
-        #     self.updateTime()
-        #     self.send_img.emit(frame)
+        pass
 
     def quit(self) -> None:
-        self.cap.release()
-        self.out.release()
+        # self.cap.release()
+        # self.out.release()
         super().quit()
 
     def updateTime(self):
@@ -115,9 +106,14 @@ class MainWindow(QMainWindow):
         self.ui.page5Button.clicked.connect(lambda: self.gotoBlock(4))
         self.ui.tableWidget.verticalHeader().setDefaultSectionSize(32)
         self.ui.tableWidget.horizontalHeader().setDefaultSectionSize(160)
+        self.ui.tableWidget.setFixedHeight(32 * 5)
         self.ui.tableWidget.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.ui.tableWidget.setSelectionBehavior(QAbstractItemView.SelectRows)
         # self.ui.tableWidget.setSelectionMode(QAbstractItemView.NoSelection)
+        self.ui.pageUpBtn.clicked.connect(self.pageUp)
+        self.ui.pageDownBtn.clicked.connect(self.pageDown)
+        self.ui.firstPageBtn.clicked.connect(self.pageHome)
+        self.ui.lastPageBtn.clicked.connect(self.pageEnd)
 
         self.detThread = DetThread()
         self.detThread.send_img.connect(lambda x: self.show_video(x, self.ui.out_video))
@@ -164,21 +160,73 @@ class MainWindow(QMainWindow):
 
     def pageUp(self):
         rowCount = self.ui.tableWidget.model().rowCount()
+        print('rowCount:' + str(rowCount))
         rowHeight = self.ui.tableWidget.rowHeight(0)
+        print('rowHeight:' + str(rowHeight))
         tableViewHeight = self.ui.tableWidget.height()
+        print('tableViewHeight:' + str(tableViewHeight))
         rowCountPerPage = tableViewHeight / rowHeight - 1
+        print('rowCountPerPage:' + str(rowCountPerPage))
         canNotViewCount = rowCount - rowCountPerPage
+        print('canNotViewCount' + str(canNotViewCount))
         if canNotViewCount == 0:
             return
         maxValue = self.ui.tableWidget.verticalScrollBar().maximum()
+        print('maxValue:' + str(maxValue))
         if maxValue == 0:
             return
         pageValue = (maxValue * rowCountPerPage) / canNotViewCount
+        print('pageValue:' + str(pageValue))
         nCurScroller = self.ui.tableWidget.verticalScrollBar().value()
+        print('nCurScroller:' + str(nCurScroller))
         if nCurScroller > 0:
-            self.ui.tableWidget.verticalScrollBar().setSliderPosition(nCurScroller - pageValue)
+            print('setSliderPosition:' + str(int(nCurScroller - pageValue)))
+            self.ui.tableWidget.verticalScrollBar().setSliderPosition(int(nCurScroller - pageValue))
         else:
+            print('setSliderPosition:' + str(maxValue))
             self.ui.tableWidget.verticalScrollBar().setSliderPosition(maxValue)
+        print('-----------------------')
+
+    def pageDown(self):
+        rowCount = self.ui.tableWidget.model().rowCount()
+        print('rowCount:' + str(rowCount))
+        rowHeight = self.ui.tableWidget.rowHeight(0)
+        print('rowHeight:' + str(rowHeight))
+        tableViewHeight = self.ui.tableWidget.height()
+        print('tableViewHeight:' + str(tableViewHeight))
+        rowCountPerPage = tableViewHeight / rowHeight - 1
+        print('rowCountPerPage:' + str(rowCountPerPage))
+        canNotViewCount = rowCount - rowCountPerPage
+        print('canNotViewCount' + str(canNotViewCount))
+        if canNotViewCount == 0:
+            return
+        maxValue = self.ui.tableWidget.verticalScrollBar().maximum()
+        print('maxValue:' + str(maxValue))
+        if maxValue == 0:
+            return
+        pageValue = (maxValue * rowCountPerPage) / canNotViewCount
+        print('pageValue:' + str(pageValue))
+        nCurScroller = self.ui.tableWidget.verticalScrollBar().value()
+        print('nCurScroller:' + str(nCurScroller))
+        if nCurScroller > 0:
+            print('setSliderPosition:' + str(int(nCurScroller + pageValue)))
+            self.ui.tableWidget.verticalScrollBar().setSliderPosition(int(nCurScroller + pageValue))
+        else:
+            print('setSliderPosition:' + str(0))
+            self.ui.tableWidget.verticalScrollBar().setSliderPosition(0)
+        print('-----------------------')
+
+    def pageHome(self):
+        maxValue = self.ui.tableWidget.verticalScrollBar().maximum()
+        if maxValue == 0:
+            return
+        self.ui.tableWidget.verticalScrollBar().setSliderPosition(0)
+
+    def pageEnd(self):
+        maxValue = self.ui.tableWidget.verticalScrollBar().maximum()
+        if maxValue == 0:
+            return
+        self.ui.tableWidget.verticalScrollBar().setSliderPosition(maxValue)
 
     # 628×471
     @staticmethod
