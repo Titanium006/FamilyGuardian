@@ -1,3 +1,4 @@
+
 from PyQt5 import QtWidgets, QtCore, QtGui
 from PyQt5.QtWidgets import QWidget, QLabel, QHBoxLayout
 from PyQt5.QtCore import QEvent, Qt, pyqtSignal
@@ -43,6 +44,7 @@ class PageWidget(QWidget):
 
             self.pageLabels.append(label)
 
+            # 在这里把左边 3 个， 中间 3 个和右边 3 个都放到了页面上
             if i < self.blockSize:
                 leftLayout.addWidget(label)
             elif i < self.blockSize * 2:
@@ -66,7 +68,8 @@ class PageWidget(QWidget):
                 page = self.currentPage + 1
             for i in range(len(self.pageLabels)):
                 if watched == self.pageLabels[i]:
-                    page = int(self.pageLabels[i].text())  #####
+                    # 在这里设置 "跳转到哪一页", 因为是 "读取当前标签的文字转化为数字", 所以不会受到我设置不同页码标签的影响
+                    page = int(self.pageLabels[i].text())
 
             if page != -1:
                 self.setCurrentPage(page, True)
@@ -75,6 +78,7 @@ class PageWidget(QWidget):
         if watched == self.ui.pageLineEdit and e.type() == QEvent.KeyRelease:
             ke = e  # QKeyEvent
             if ke.key() == Qt.Key_Return or ke.key() == Qt.Key_Enter:
+                # 在这里设置 "跳转到哪一页", 因为是 "读取当前标签的文字转化为数字", 所以不会受到我设置不同页码标签的影响
                 self.setCurrentPage(int(self.ui.pageLineEdit.text()), True)
                 return True
 
@@ -100,29 +104,46 @@ class PageWidget(QWidget):
                 self.pageLabels[i].setStyleSheet("/**/")
             return
 
+        print("Bigger")
         c = self.currentPage
         n = self.blockSize
         m = self.maxPage
-        print('currentPage:' + str(c) + '\tblockSize:' + str(n) + '\tmaxPage' + str(m))
-        centerStartPage = 0
-        if 1 <= c <= n + n / 2 + 1:
-            centerStartPage = n + 1
+        # print('currentPage:' + str(c) + '\tblockSize:' + str(n) + '\tmaxPage:' + str(m))
+        centerStartPage = 0     # int类型, 需要进行截断处理
+
+        # 我觉得这里触发条件是没错的, 就是要改一下设置的页码而已
+        if 1 <= c <= int(n + n / 2 + 1):
+
+            print('1 <= {} <= {}'.format(c, int(n + n / 2 + 1)))
+
+            centerStartPage = int(n + 1)
             self.ui.rightSeparateLabel.show()
-        elif m - n - n / 2 <= c <= m:
-            centerStartPage = m - n - n + 1
+        elif int(m - n - n / 2) <= c <= m:
+
+            print('{} <= {} <= {}'.format(int(m - n - n / 2), c, m))
+
+            centerStartPage = int(m - n - n + 1)
             self.ui.leftSeparateLabel.show()
         else:
-            centerStartPage = c - n / 2
+
+            print('{} <= {} <= {}'.format(int(n + n / 2 + 1 + 1), c, int(m - n - n / 2 - 1)))
+
+            centerStartPage = int(c - n / 2)
             self.ui.rightSeparateLabel.show()
             self.ui.leftSeparateLabel.show()
 
+        # 在这里设置底下页码的标签
         for i in range(n):
+            print('pageLabels {} {} {}'.format(i + 1, n + i + 1, 3 * n - i - 1 + 1))
+            print('pageStr    {} {} {}'.format(i + 1, centerStartPage + i, m - i))
             self.pageLabels[i].setText(str(i + 1))
+            # self.pageLabels[n + i].setText(str(centerStartPage + i + 1))          # 这个中间控件的效果达到了, 但是右边的控件会乱
             self.pageLabels[n + i].setText(str(centerStartPage + i))
             self.pageLabels[3 * n - i - 1].setText(str(m - i))
 
         for i in range(len(self.pageLabels)):
             page = int(self.pageLabels[i].text())
+            # print('page: ' + str(page))
             if page == self.currentPage:
                 self.pageLabels[i].setProperty("currentPage", "true")
             else:

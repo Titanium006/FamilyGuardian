@@ -8,6 +8,7 @@ from myDesign_win.mainwindow import Ui_MainWindow
 
 Datalist = [[]]
 RowIndex = 0
+pageCount = 15
 
 
 class MainWindow(QMainWindow):
@@ -25,8 +26,9 @@ class MainWindow(QMainWindow):
     def LoadPage(self, pageIndex: int):
         global RowIndex
         global Datalist
+        global pageCount
         Datalist.clear()
-        for i in range(10):
+        for i in range(pageCount):
             Row = []
             RowIndex += 1
             Row.append("Data_1_{}_{}".format(RowIndex, pageIndex))
@@ -41,7 +43,8 @@ class MainWindow(QMainWindow):
 
     def BtnLoadDataClick(self):
         global RowIndex
-        self.pageTable.pageWidget.setMaxPage(10)
+        global pageCount
+        self.pageTable.pageWidget.setMaxPage(pageCount)
         # print(type(self.pageTable.pageWidget))
         self.pageTable.pageWidget.setCurrentPage(1, True)
         # self.pageTable.pageWidget.setCurrentPage(1, False)
