@@ -104,7 +104,7 @@ class PageWidget(QWidget):
                 self.pageLabels[i].setStyleSheet("/**/")
             return
 
-        print("Bigger")
+        # print("Bigger")
         c = self.currentPage
         n = self.blockSize
         m = self.maxPage
@@ -114,20 +114,20 @@ class PageWidget(QWidget):
 
         if 1 <= c <= int(n + n / 2 + 1):
 
-            print('1 <= {} <= {}'.format(c, int(n + n / 2 + 1)))
+            # print('1 <= {} <= {}'.format(c, int(n + n / 2 + 1)))
 
             centerStartPage = int(n + 1)
             self.ui.rightSeparateLabel.show()
         elif int(m - n - n / 2 + 1) <= c <= m:
 
-            print('{} <= {} <= {}'.format(int(m - n - n / 2), c, m))
+            # print('{} <= {} <= {}'.format(int(m - n - n / 2), c, m))
 
             centerStartPage = int(m - n - n + 1)
             self.ui.leftSeparateLabel.show()
 
         else:
 
-            print('{} <= {} <= {}'.format(int(n + n / 2 + 1 + 1), c, int(m - n - n / 2 - 1)))
+            # print('{} <= {} <= {}'.format(int(n + n / 2 + 1 + 1), c, int(m - n - n / 2 - 1)))
 
             centerStartPage = int(c - n / 2)
             self.ui.rightSeparateLabel.show()
@@ -136,8 +136,8 @@ class PageWidget(QWidget):
 
         # 在这里设置底下页码的标签
         for i in range(n):
-            print('pageLabels {} {} {}'.format(i + 1, n + i + 1, 3 * n - i - 1 + 1))
-            print('pageStr    {} {} {}'.format(i + 1, centerStartPage + i, m - i))
+            # print('pageLabels {} {} {}'.format(i + 1, n + i + 1, 3 * n - i - 1 + 1))
+            # print('pageStr    {} {} {}'.format(i + 1, centerStartPage + i, m - i))
             self.pageLabels[i].setText(str(i + 1))
             # self.pageLabels[n + i].setText(str(centerStartPage + i + 1))          # 这个中间控件的效果达到了, 但是右边的控件会乱
             self.pageLabels[n + i].setText(str(centerStartPage + i + fmVariable))

@@ -6,49 +6,45 @@ from utils.PageWidget import PageWidget
 from utils.PageTable import PageTable
 from myDesign_win.mainwindow import Ui_MainWindow
 
-Datalist = [[]]
-RowIndex = 0
-pageCount = 15
-
 
 class MainWindow(QMainWindow):
     ui = Ui_MainWindow()
+    Datalist = [[]]
+    RowIndex = 0
+    pageCount = 50
     # pageTable = PageTable()
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.ui.setupUi(self)
+        # header = ["T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10"]
         header = ["T1", "T2", "T3", "T4", "T5", "T6", "T7"]
         self.pageTable = PageTable(header, 5)
+        # self.pageTable = PageTable(header, 30)
         self.ui.testLayout.addLayout(self.pageTable)
         self.pageTable.pageWidget.send_curPage.connect(lambda x: self.PageChange(x))
 
     def LoadPage(self, pageIndex: int):
-        global RowIndex
-        global Datalist
-        global pageCount
-        Datalist.clear()
-        for i in range(pageCount):
+        self.Datalist.clear()
+        for i in range(self.pageCount):
             Row = []
-            RowIndex += 1
-            Row.append("Data_1_{}_{}".format(RowIndex, pageIndex))
-            Row.append("Data_2_{}_{}".format(RowIndex, pageIndex))
-            Row.append("Data_3_{}_{}".format(RowIndex, pageIndex))
-            Row.append("Data_4_{}_{}".format(RowIndex, pageIndex))
-            Row.append("Data_5_{}_{}".format(RowIndex, pageIndex))
-            Row.append("Data_6_{}_{}".format(RowIndex, pageIndex))
-            Row.append("Data_7_{}_{}".format(RowIndex, pageIndex))
-            Datalist.append(Row)
-        self.pageTable.SetData(Datalist)
+            self.RowIndex += 1
+            Row.append("Data_1_{}_{}".format(self.RowIndex, pageIndex))
+            Row.append("Data_2_{}_{}".format(self.RowIndex, pageIndex))
+            Row.append("Data_3_{}_{}".format(self.RowIndex, pageIndex))
+            Row.append("Data_4_{}_{}".format(self.RowIndex, pageIndex))
+            Row.append("Data_5_{}_{}".format(self.RowIndex, pageIndex))
+            Row.append("Data_6_{}_{}".format(self.RowIndex, pageIndex))
+            Row.append("Data_7_{}_{}".format(self.RowIndex, pageIndex))
+            self.Datalist.append(Row)
+        self.pageTable.SetData(self.Datalist)
 
     def BtnLoadDataClick(self):
-        global RowIndex
-        global pageCount
-        self.pageTable.pageWidget.setMaxPage(pageCount)
+        self.pageTable.pageWidget.setMaxPage(self.pageCount)
         # print(type(self.pageTable.pageWidget))
         self.pageTable.pageWidget.setCurrentPage(1, True)
         # self.pageTable.pageWidget.setCurrentPage(1, False)
-        RowIndex = 0
+        self.RowIndex = 0
         self.LoadPage(1)
 
     def PageChange(self, currentPage: int):

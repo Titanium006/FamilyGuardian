@@ -165,7 +165,7 @@
            <string notr="true">background-color: rgb(170, 170, 255);</string>
           </property>
           <property name="currentIndex">
-           <number>1</number>
+           <number>0</number>
           </property>
           <widget class="QWidget" name="page">
            <widget class="QLabel" name="out_video">
@@ -218,240 +218,37 @@ color: white;</string>
              <rect>
               <x>10</x>
               <y>10</y>
-              <width>741</width>
-              <height>241</height>
+              <width>771</width>
+              <height>561</height>
              </rect>
             </property>
             <property name="title">
              <string/>
             </property>
-            <layout class="QVBoxLayout" name="verticalLayout_3">
-             <item>
-              <widget class="QTableWidget" name="tableWidget">
-               <property name="verticalScrollBarPolicy">
-                <enum>Qt::ScrollBarAlwaysOff</enum>
-               </property>
-               <property name="horizontalScrollBarPolicy">
-                <enum>Qt::ScrollBarAlwaysOff</enum>
-               </property>
-               <row>
-                <property name="text">
-                 <string>1</string>
-                </property>
-               </row>
-               <row>
-                <property name="text">
-                 <string>2</string>
-                </property>
-               </row>
-               <row>
-                <property name="text">
-                 <string>3</string>
-                </property>
-               </row>
-               <row>
-                <property name="text">
-                 <string>4</string>
-                </property>
-               </row>
-               <row>
-                <property name="text">
-                 <string>5</string>
-                </property>
-               </row>
-               <row>
-                <property name="text">
-                 <string>6</string>
-                </property>
-               </row>
-               <row>
-                <property name="text">
-                 <string>7</string>
-                </property>
-               </row>
-               <row>
-                <property name="text">
-                 <string>8</string>
-                </property>
-               </row>
-               <row>
-                <property name="text">
-                 <string>9</string>
-                </property>
-               </row>
-               <row>
-                <property name="text">
-                 <string>10</string>
-                </property>
-               </row>
-               <row>
-                <property name="text">
-                 <string>11</string>
-                </property>
-               </row>
-               <row>
-                <property name="text">
-                 <string>12</string>
-                </property>
-               </row>
-               <row>
-                <property name="text">
-                 <string>13</string>
-                </property>
-               </row>
-               <row>
-                <property name="text">
-                 <string>14</string>
-                </property>
-               </row>
-               <row>
-                <property name="text">
-                 <string>15</string>
-                </property>
-               </row>
-               <row>
-                <property name="text">
-                 <string>16</string>
-                </property>
-               </row>
-               <row>
-                <property name="text">
-                 <string>17</string>
-                </property>
-               </row>
-               <row>
-                <property name="text">
-                 <string>18</string>
-                </property>
-               </row>
-               <row>
-                <property name="text">
-                 <string>19</string>
-                </property>
-               </row>
-               <row>
-                <property name="text">
-                 <string>20</string>
-                </property>
-               </row>
-               <row>
-                <property name="text">
-                 <string>21</string>
-                </property>
-               </row>
-               <row>
-                <property name="text">
-                 <string>22</string>
-                </property>
-               </row>
-               <row>
-                <property name="text">
-                 <string>23</string>
-                </property>
-               </row>
-               <row>
-                <property name="text">
-                 <string>24</string>
-                </property>
-               </row>
-               <row>
-                <property name="text">
-                 <string>25</string>
-                </property>
-               </row>
-               <row>
-                <property name="text">
-                 <string>26</string>
-                </property>
-               </row>
-               <row>
-                <property name="text">
-                 <string>27</string>
-                </property>
-               </row>
-               <row>
-                <property name="text">
-                 <string>28</string>
-                </property>
-               </row>
-               <row>
-                <property name="text">
-                 <string>29</string>
-                </property>
-               </row>
-               <row>
-                <property name="text">
-                 <string>30</string>
-                </property>
-               </row>
-               <column>
-                <property name="text">
-                 <string>日期</string>
-                </property>
-               </column>
-               <column>
-                <property name="text">
-                 <string>报警类型</string>
-                </property>
-               </column>
-               <column>
-                <property name="text">
-                 <string>触发时间(持续时间)</string>
-                </property>
-               </column>
-               <column>
-                <property name="text">
-                 <string>查看回放</string>
-                </property>
-               </column>
-              </widget>
-             </item>
-             <item>
-              <layout class="QHBoxLayout" name="horizontalLayout_3">
-               <item>
-                <widget class="QPushButton" name="firstPageBtn">
-                 <property name="text">
-                  <string>首 页</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QPushButton" name="lastPageBtn">
-                 <property name="text">
-                  <string>末 页</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <spacer name="horizontalSpacer_2">
-                 <property name="orientation">
-                  <enum>Qt::Horizontal</enum>
-                 </property>
-                 <property name="sizeHint" stdset="0">
-                  <size>
-                   <width>40</width>
-                   <height>20</height>
-                  </size>
-                 </property>
-                </spacer>
-               </item>
-               <item>
-                <widget class="QPushButton" name="pageUpBtn">
-                 <property name="text">
-                  <string>上一页</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QPushButton" name="pageDownBtn">
-                 <property name="text">
-                  <string>下一页</string>
-                 </property>
-                </widget>
-               </item>
-              </layout>
-             </item>
-            </layout>
+            <widget class="QPushButton" name="btnLoadData">
+             <property name="geometry">
+              <rect>
+               <x>44</x>
+               <y>82</y>
+               <width>91</width>
+               <height>31</height>
+              </rect>
+             </property>
+             <property name="text">
+              <string>加载模拟数据</string>
+             </property>
+            </widget>
+            <widget class="QWidget" name="verticalLayoutWidget">
+             <property name="geometry">
+              <rect>
+               <x>40</x>
+               <y>130</y>
+               <width>661</width>
+               <height>311</height>
+              </rect>
+             </property>
+             <layout class="QVBoxLayout" name="testLayout"/>
+            </widget>
            </widget>
           </widget>
           <widget class="QWidget" name="page_3">
