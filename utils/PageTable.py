@@ -1,15 +1,18 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QVBoxLayout, QTableWidget, QAbstractItemView, QHeaderView, QHBoxLayout
 from PyQt5.QtWidgets import QTableWidgetItem
-from PageWidget import PageWidget
+from utils.PageWidget import PageWidget
+
 
 class PageTable(QVBoxLayout):
     PageSize = 10
+
     # pageWidget = PageWidget()
     # tableWidget = QTableWidget()
 
     def __init__(self, header, rowCount: int):
-        print(" PageTable init ,rowCount:" + str(rowCount) + ",header size:" + len(header))
+        super().__init__()
+        print(" PageTable init ,rowCount:" + str(rowCount) + ",header size:" + str(len(header)))
 
         self.tableWidget = QTableWidget(rowCount, len(header))
         self.tableWidget.setWindowTitle("Title")
@@ -18,7 +21,7 @@ class PageTable(QVBoxLayout):
         self.tableWidget.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.tableWidget.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.tableWidget.verticalHeader().setHidden(True)
-        self.tableWidget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch) # 让表格挤满占个父容器
+        self.tableWidget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)  # 让表格挤满占个父容器
 
         self.tableWidget.setStyleSheet("QHeaderView::section {"
                                        "color: black;font:bold 14px \"微软雅黑\";"
@@ -45,5 +48,5 @@ class PageTable(QVBoxLayout):
     def SetData(self, DataList):
         for i in range(len(DataList)):
             Item = DataList[i]
-            for j in Item.size():
+            for j in range(len(Item)):
                 self.tableWidget.setItem(i, j, QTableWidgetItem(Item[j]))
