@@ -44,6 +44,7 @@ class MainWindow(QMainWindow):
         self.pageTable.pageWidget.setMaxPage(10)
         # print(type(self.pageTable.pageWidget))
         self.pageTable.pageWidget.setCurrentPage(1, True)
+        # self.pageTable.pageWidget.setCurrentPage(1, False)
         RowIndex = 0
         self.LoadPage(1)
 

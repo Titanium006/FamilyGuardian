@@ -82,7 +82,7 @@ class PageWidget(QWidget):
 
     def updatePageLabels(self):
         self.ui.leftSeparateLabel.hide()
-        self.ui.rightPagesWidget.hide()
+        self.ui.rightSeparateLabel.hide()
 
         if self.maxPage <= self.blockSize * 3:
             for i in range(len(self.pageLabels)):
@@ -98,10 +98,12 @@ class PageWidget(QWidget):
                     self.pageLabels[i].setProperty("currentPage", "false")
 
                 self.pageLabels[i].setStyleSheet("/**/")
+            return
 
         c = self.currentPage
         n = self.blockSize
         m = self.maxPage
+        print('currentPage:' + str(c) + '\tblockSize:' + str(n) + '\tmaxPage' + str(m))
         centerStartPage = 0
         if 1 <= c <= n + n / 2 + 1:
             centerStartPage = n + 1
