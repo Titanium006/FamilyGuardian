@@ -5,15 +5,18 @@ import time
 import numpy as np
 import cv2
 
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5 import QtCore, QtGui, QtWidgets, QtMultimediaWidgets, QtMultimedia
 from PyQt5.QtCore import QTimer, QDateTime
 from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QDialog, QMessageBox, QLineEdit, QAbstractItemView
-from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout, QTableWidget
+from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout, QTableWidget, QSlider
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5.QtGui import QImage, QPixmap
+from PyQt5.QtMultimedia import QMediaPlayer
+from PyQt5.QtMultimediaWidgets import QVideoWidget
 from myDesign_win.home import Ui_MainWindow
 from utils.PageWidget import PageWidget
 from utils.PageTable import PageTable
+from utils.myvideoslider import myVideoSlider
 
 from ultralytics import YOLO
 
@@ -95,6 +98,12 @@ class DetThread(QThread):
         self.send_curTime.emit(timeplay)
 
 
+class VideoReplayThread(QThread):
+
+    def __init__(self):
+        super(VideoReplayThread, self).__init__()
+
+
 class MainWindow(QMainWindow):
     ui = Ui_MainWindow()
     isMaxi = False
@@ -103,6 +112,7 @@ class MainWindow(QMainWindow):
     Datalist = [[]]
     RowIndex = 0
     pageCount = 15
+
     ##############
 
     def __init__(self, parent=None):
@@ -129,6 +139,21 @@ class MainWindow(QMainWindow):
         self.detThread.send_img.connect(lambda x: self.show_video(x, self.ui.out_video))
         self.detThread.send_curTime.connect(lambda x: self.ui.curTimeLabel.setText(x))
         self.detThread.start()
+
+        # VideoReplay
+        self.sld_video_pressed = False
+        self.player = QMediaPlayer()
+        self.player.setVideoOutput(self.ui.wgt_video)
+        self.ui.btn_open.clicked.connect(self.openVideoFile)
+        self.ui.btn_play.clicked.connect(self.playVideo)
+        self.ui.btn_stop.clicked.connect(self.pauseVideo)
+        self.player.positionChanged.connect(self.changeSlider)
+        self.ui.sld_video.setTracking(False)
+        self.ui.sld_video.sliderRelease.connect(self.releaseSlider)
+        self.ui.sld_video.sliderPressed.connect(self.pressSlider)
+        self.ui.sld_video.sliderMoved.connect(self.moveSlider)
+        self.ui.sld_video.ClickedValue.connect(self.clickedSlider)
+        self.ui.sld_audio.valueChanged.connect(self.volumnChange)
 
     def myClose(self):
         self.detThread.quit()
@@ -200,6 +225,36 @@ class MainWindow(QMainWindow):
 
         except Exception as e:
             print(repr(e))
+
+    # VideoReplay
+    def volumnChange(self, position):
+        volume = round(position / self.ui.sld_audio.maximum() * 100)
+        print("volume %f" % volume)
+        self.player
+
+    def clickedSlider(self, position):
+        pass
+
+    def moveSlider(self, position):
+        pass
+
+    def pressSlider(self):
+        pass
+
+    def releaseSlider(self):
+        pass
+
+    def changeSlider(self, position):
+        pass
+
+    def openVideoFile(self):
+        pass
+
+    def playVideo(self):
+        pass
+
+    def pauseVideo(self):
+        pass
 
 
 if __name__ == '__main__':
