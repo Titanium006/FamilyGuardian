@@ -176,6 +176,7 @@ class VideoReplayWindow(QWidget):
         # print('发送关闭信号后')
         super().closeEvent(event)
 
+
 class VideoReplayThread(QThread):
     is_running = True
 
@@ -205,7 +206,7 @@ class VideoReplayThread(QThread):
 
     def stop(self):
         self.is_running = False
-    
+
     def quit(self) -> None:
         self.is_running = False
         print('Thread is Quitting!')
@@ -249,17 +250,23 @@ class MainWindow(QMainWindow):
         self.detThread.send_curTime.connect(lambda x: self.ui.curTimeLabel.setText(x))
         self.detThread.start()
 
-        self.ui.testBtn.clicked.connect(self.videoReplay)
-        self.ui.checkBtn.clicked.connect(self.checkThread)
+        # VideoReplay
+        self.sld_video_pressed = False
+        self.player = QMediaPlayer()
+        self.player.setVideoOutput(self.ui.wgt_video)
+        self.ui.btn_open.clicked.connect(self.openVideoFile)
+        self.ui.btn_play.clicked.connect(self.playVideo)
+        self.ui.btn_stop.clicked.connect(self.pauseVideo)
+        self.player.positionChanged.connect(self.changeSlider)
+        self.ui.sld_video.setTracking(False)
+        self.ui.sld_video.sliderReleased.connect(self.releaseSlider)
+        self.ui.sld_video.sliderPressed.connect(self.pressSlider)
+        self.ui.sld_video.sliderMoved.connect(self.moveSlider)
+        self.ui.sld_video.ClickedValue.connect(self.clickedSlider)
+        self.ui.sld_audio.valueChanged.connect(self.volumnChange)
 
     def myClose(self):
         self.detThread.quit()
-        for thread in self.replayThreads:
-            if thread.isRunning():
-                thread.stop()
-                # thread.wait()
-                print('After Wait')
-        print('关闭主窗口')
         self.close()
 
     def gotoBlock(self, index: int):
@@ -299,15 +306,62 @@ class MainWindow(QMainWindow):
     def PageChange(self, currentPage: int):
         self.LoadPage(currentPage)
 
-    def videoReplay(self):
-        path = './v.f100830.mp4'
-        replayThread = VideoReplayThread(path)
-        self.replayThreads.append(replayThread)
-        replayThread.start()
+    # def videoReplay(self):
+    #     path = './v.f100830.mp4'
+    #     replayThread = VideoReplayThread(path)
+    #     self.replayThreads.append(replayThread)
+    #     replayThread.start()
+    #
+    # def checkThread(self):
+    #     for thread in self.replayThreads:
+    #         print(thread.isRunning())
 
-    def checkThread(self):
-        for thread in self.replayThreads:
-            print(thread.isRunning())
+    # VideoReplay
+    def volumnChange(self, position):
+        volume = round(position / self.ui.sld_audio.maximum() * 100)
+        print("volume %f" % volume)
+        self.player.setVolume(volume)
+        self.ui.lab_audio.setText("volume:" + str(volume) + "%")
+
+    def clickedSlider(self, position):
+        if self.player.duration() > 0:
+            video_position = int((position / 100) * self.player.duration())
+            self.player.setPosition(video_position)
+            self.ui.lab_video.setText("%.2f%%" % position)
+        else:
+            self.ui.sld_video.setValue(0)
+
+    def moveSlider(self, position):
+        self.sld_video_pressed = True
+        if self.player.duration() > 0:
+            video_position = int((position / 100) * self.player.duration())
+            self.player.setPosition(video_position)
+            self.ui.lab_video.setText("%.2f%%" % position)
+
+    def pressSlider(self):
+        self.sld_video_pressed = True
+        print("pressed")
+
+    def releaseSlider(self):
+        self.sld_video_pressed = False
+
+    def changeSlider(self, position):
+        if not self.sld_video_pressed:
+            self.videoLength = self.player.duration() + 0.1
+            self.ui.sld_video.setValue(round((position / self.videoLength) * 100))
+            self.ui.lab_video.setText("%.2f%%" % ((position / self.videoLength) * 100))
+
+    def openVideoFile(self):
+        # video_url = QUrl(self.videoPath)
+        # self.player.setMedia(QMediaContent(video_url))
+        self.player.setMedia(QMediaContent(QFileDialog.getOpenFileUrl()[0]))  # 选取视频文件
+        self.player.play()
+
+    def playVideo(self):
+        self.player.play()
+
+    def pauseVideo(self):
+        self.player.pause()
 
     # 628×471
     @staticmethod
