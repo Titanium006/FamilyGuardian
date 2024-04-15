@@ -252,134 +252,31 @@ color: white;</string>
            </widget>
           </widget>
           <widget class="QWidget" name="page_3">
-           <widget class="QGroupBox" name="groupBox_6">
+           <widget class="QPushButton" name="testBtn">
             <property name="geometry">
              <rect>
-              <x>20</x>
-              <y>30</y>
-              <width>751</width>
-              <height>551</height>
+              <x>234</x>
+              <y>240</y>
+              <width>191</width>
+              <height>91</height>
              </rect>
             </property>
-            <property name="title">
-             <string/>
+            <property name="text">
+             <string>打开视频窗口</string>
             </property>
-            <layout class="QVBoxLayout" name="verticalLayout_3">
-             <item>
-              <widget class="QVideoWidget" name="wgt_video" native="true"/>
-             </item>
-             <item>
-              <layout class="QHBoxLayout" name="horizontalLayout_4">
-               <item>
-                <widget class="myVideoSlider" name="sld_video">
-                 <property name="minimumSize">
-                  <size>
-                   <width>410</width>
-                   <height>0</height>
-                  </size>
-                 </property>
-                 <property name="maximumSize">
-                  <size>
-                   <width>16777215</width>
-                   <height>20</height>
-                  </size>
-                 </property>
-                 <property name="maximum">
-                  <number>100</number>
-                 </property>
-                 <property name="orientation">
-                  <enum>Qt::Horizontal</enum>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QLabel" name="lab_video">
-                 <property name="maximumSize">
-                  <size>
-                   <width>16777215</width>
-                   <height>50</height>
-                  </size>
-                 </property>
-                 <property name="text">
-                  <string>0%</string>
-                 </property>
-                </widget>
-               </item>
-              </layout>
-             </item>
-             <item>
-              <layout class="QHBoxLayout" name="horizontalLayout_3">
-               <item>
-                <widget class="QPushButton" name="btn_open">
-                 <property name="maximumSize">
-                  <size>
-                   <width>100</width>
-                   <height>25</height>
-                  </size>
-                 </property>
-                 <property name="text">
-                  <string>打开视频文件</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QPushButton" name="btn_play">
-                 <property name="maximumSize">
-                  <size>
-                   <width>100</width>
-                   <height>25</height>
-                  </size>
-                 </property>
-                 <property name="text">
-                  <string>播放</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QPushButton" name="btn_stop">
-                 <property name="maximumSize">
-                  <size>
-                   <width>100</width>
-                   <height>25</height>
-                  </size>
-                 </property>
-                 <property name="text">
-                  <string>暂停</string>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QSlider" name="sld_audio">
-                 <property name="minimumSize">
-                  <size>
-                   <width>100</width>
-                   <height>0</height>
-                  </size>
-                 </property>
-                 <property name="maximumSize">
-                  <size>
-                   <width>150</width>
-                   <height>20</height>
-                  </size>
-                 </property>
-                 <property name="value">
-                  <number>99</number>
-                 </property>
-                 <property name="orientation">
-                  <enum>Qt::Horizontal</enum>
-                 </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QLabel" name="lab_audio">
-                 <property name="text">
-                  <string>volume:100%</string>
-                 </property>
-                </widget>
-               </item>
-              </layout>
-             </item>
-            </layout>
+           </widget>
+           <widget class="QPushButton" name="checkBtn">
+            <property name="geometry">
+             <rect>
+              <x>540</x>
+              <y>270</y>
+              <width>161</width>
+              <height>81</height>
+             </rect>
+            </property>
+            <property name="text">
+             <string>检 查</string>
+            </property>
            </widget>
           </widget>
           <widget class="QWidget" name="page_4">
@@ -431,19 +328,6 @@ color: white;</string>
    </widget>
   </widget>
  </widget>
- <customwidgets>
-  <customwidget>
-   <class>QVideoWidget</class>
-   <extends>QWidget</extends>
-   <header>QtMultimediaWidgets</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
-   <class>myVideoSlider</class>
-   <extends>QSlider</extends>
-   <header>myvideoslider.h</header>
-  </customwidget>
- </customwidgets>
  <resources/>
  <connections/>
 </ui>

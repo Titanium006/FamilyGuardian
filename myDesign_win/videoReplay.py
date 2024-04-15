@@ -79,5 +79,5 @@ class Ui_Form(object):
         self.btn_play.setText(_translate("Form", "播放"))
         self.btn_stop.setText(_translate("Form", "暂停"))
         self.lab_audio.setText(_translate("Form", "volume:100%"))
-from QtMultimediaWidgets import QVideoWidget
-from myvideoslider import myVideoSlider
+from PyQt5.QtMultimediaWidgets import QVideoWidget
+from myDesign_win.myvideoslider import myVideoSlider

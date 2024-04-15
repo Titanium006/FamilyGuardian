@@ -1,22 +1,20 @@
 import sys
 import os
-import re
 import time
+
 import numpy as np
 import cv2
 
-from PyQt5 import QtCore, QtGui, QtWidgets, QtMultimediaWidgets, QtMultimedia
-from PyQt5.QtCore import QTimer, QDateTime
-from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QDialog, QMessageBox, QLineEdit, QAbstractItemView
-from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout, QTableWidget, QSlider
-from PyQt5.QtCore import Qt, QThread, pyqtSignal
+from PyQt5 import QtCore, QtGui
+from PyQt5.QtCore import QTimer, QDateTime, QUrl
+from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QDialog, QFileDialog
+from PyQt5.QtCore import Qt, QThread, pyqtSignal, QObject, QEvent
 from PyQt5.QtGui import QImage, QPixmap
-from PyQt5.QtMultimedia import QMediaPlayer
 from PyQt5.QtMultimediaWidgets import QVideoWidget
+from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from myDesign_win.home import Ui_MainWindow
-from utils.PageWidget import PageWidget
+from myDesign_win.videoReplay import Ui_Form
 from utils.PageTable import PageTable
-from utils.myvideoslider import myVideoSlider
 
 from ultralytics import YOLO
 
@@ -86,8 +84,8 @@ class DetThread(QThread):
         # pass
 
     def quit(self) -> None:
-        # self.cap.release()
-        # self.out.release()
+        self.cap.release()
+        self.out.release()
         super().quit()
 
     def updateTime(self):
@@ -98,10 +96,120 @@ class DetThread(QThread):
         self.send_curTime.emit(timeplay)
 
 
-class VideoReplayThread(QThread):
+class VideoReplayWindow(QWidget):
+    ui = Ui_Form()
+    closing = pyqtSignal()
+    videoPath = ''
 
-    def __init__(self):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.ui.setupUi(self)
+        # VideoReplay
+        self.sld_video_pressed = False
+        self.player = QMediaPlayer()
+        self.player.setVideoOutput(self.ui.wgt_video)
+        self.ui.btn_open.clicked.connect(self.openVideoFile)
+        self.ui.btn_play.clicked.connect(self.playVideo)
+        self.ui.btn_stop.clicked.connect(self.pauseVideo)
+        self.player.positionChanged.connect(self.changeSlider)
+        self.ui.sld_video.setTracking(False)
+        self.ui.sld_video.sliderReleased.connect(self.releaseSlider)
+        self.ui.sld_video.sliderPressed.connect(self.pressSlider)
+        self.ui.sld_video.sliderMoved.connect(self.moveSlider)
+        self.ui.sld_video.ClickedValue.connect(self.clickedSlider)
+        self.ui.sld_audio.valueChanged.connect(self.volumnChange)
+
+    # VideoReplay
+    def volumnChange(self, position):
+        volume = round(position / self.ui.sld_audio.maximum() * 100)
+        print("volume %f" % volume)
+        self.player.setVolume(volume)
+        self.ui.lab_audio.setText("volume:" + str(volume) + "%")
+
+    def clickedSlider(self, position):
+        if self.player.duration() > 0:
+            video_position = int((position / 100) * self.player.duration())
+            self.player.setPosition(video_position)
+            self.ui.lab_video.setText("%.2f%%" % position)
+        else:
+            self.ui.sld_video.setValue(0)
+
+    def moveSlider(self, position):
+        self.sld_video_pressed = True
+        if self.player.duration() > 0:
+            video_position = int((position / 100) * self.player.duration())
+            self.player.setPosition(video_position)
+            self.ui.lab_video.setText("%.2f%%" % position)
+
+    def pressSlider(self):
+        self.sld_video_pressed = True
+        print("pressed")
+
+    def releaseSlider(self):
+        self.sld_video_pressed = False
+
+    def changeSlider(self, position):
+        if not self.sld_video_pressed:
+            self.videoLength = self.player.duration() + 0.1
+            self.ui.sld_video.setValue(round((position / self.videoLength) * 100))
+            self.ui.lab_video.setText("%.2f%%" % ((position / self.videoLength) * 100))
+
+    def openVideoFile(self):
+        # video_url = QUrl(self.videoPath)
+        # self.player.setMedia(QMediaContent(video_url))
+        self.player.setMedia(QMediaContent(QFileDialog.getOpenFileUrl()[0]))  # 选取视频文件
+        self.player.play()
+
+    def playVideo(self):
+        self.player.play()
+
+    def pauseVideo(self):
+        self.player.pause()
+
+    def closeEvent(self, event: QtGui.QCloseEvent) -> None:
+        print('进入closeEvent!')
+        if self.player.state() == QMediaPlayer.PlayingState or self.player.state() == QMediaPlayer.PausedState:
+            self.player.stop()
+            # self.player.deleteLater()
+        # print('发送关信号前')
+        # self.closing.emit()
+        # print('发送关闭信号后')
+        super().closeEvent(event)
+
+class VideoReplayThread(QThread):
+    is_running = True
+
+    def __init__(self, videoPath):
         super(VideoReplayThread, self).__init__()
+        # self.videoPath = videoPath
+        self.videoWindow = VideoReplayWindow()
+        self.videoWindow.videoPath = videoPath
+
+    def run(self):
+        self.videoWindow.show()
+        # time.sleep(20)
+        # self.videoWindow.closing.connect(self.stop)
+        # self.videoWindow.close()
+
+        while self.is_running:
+            time.sleep(1)
+            continue
+        if self.videoWindow.isVisible():
+            print('关闭子线程窗口')
+            self.videoWindow.close()
+            print('After 子线程窗口 close')
+
+        print('子线程结束')
+
+        # self.openVideoFile()
+
+    def stop(self):
+        self.is_running = False
+    
+    def quit(self) -> None:
+        self.is_running = False
+        print('Thread is Quitting!')
+        super().quit()
 
 
 class MainWindow(QMainWindow):
@@ -114,6 +222,7 @@ class MainWindow(QMainWindow):
     pageCount = 15
 
     ##############
+    replayThreads = []
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -140,23 +249,17 @@ class MainWindow(QMainWindow):
         self.detThread.send_curTime.connect(lambda x: self.ui.curTimeLabel.setText(x))
         self.detThread.start()
 
-        # VideoReplay
-        self.sld_video_pressed = False
-        self.player = QMediaPlayer()
-        self.player.setVideoOutput(self.ui.wgt_video)
-        self.ui.btn_open.clicked.connect(self.openVideoFile)
-        self.ui.btn_play.clicked.connect(self.playVideo)
-        self.ui.btn_stop.clicked.connect(self.pauseVideo)
-        self.player.positionChanged.connect(self.changeSlider)
-        self.ui.sld_video.setTracking(False)
-        self.ui.sld_video.sliderRelease.connect(self.releaseSlider)
-        self.ui.sld_video.sliderPressed.connect(self.pressSlider)
-        self.ui.sld_video.sliderMoved.connect(self.moveSlider)
-        self.ui.sld_video.ClickedValue.connect(self.clickedSlider)
-        self.ui.sld_audio.valueChanged.connect(self.volumnChange)
+        self.ui.testBtn.clicked.connect(self.videoReplay)
+        self.ui.checkBtn.clicked.connect(self.checkThread)
 
     def myClose(self):
         self.detThread.quit()
+        for thread in self.replayThreads:
+            if thread.isRunning():
+                thread.stop()
+                # thread.wait()
+                print('After Wait')
+        print('关闭主窗口')
         self.close()
 
     def gotoBlock(self, index: int):
@@ -196,6 +299,16 @@ class MainWindow(QMainWindow):
     def PageChange(self, currentPage: int):
         self.LoadPage(currentPage)
 
+    def videoReplay(self):
+        path = './v.f100830.mp4'
+        replayThread = VideoReplayThread(path)
+        self.replayThreads.append(replayThread)
+        replayThread.start()
+
+    def checkThread(self):
+        for thread in self.replayThreads:
+            print(thread.isRunning())
+
     # 628×471
     @staticmethod
     def show_video(img_src, label):
@@ -225,36 +338,6 @@ class MainWindow(QMainWindow):
 
         except Exception as e:
             print(repr(e))
-
-    # VideoReplay
-    def volumnChange(self, position):
-        volume = round(position / self.ui.sld_audio.maximum() * 100)
-        print("volume %f" % volume)
-        self.player
-
-    def clickedSlider(self, position):
-        pass
-
-    def moveSlider(self, position):
-        pass
-
-    def pressSlider(self):
-        pass
-
-    def releaseSlider(self):
-        pass
-
-    def changeSlider(self, position):
-        pass
-
-    def openVideoFile(self):
-        pass
-
-    def playVideo(self):
-        pass
-
-    def pauseVideo(self):
-        pass
 
 
 if __name__ == '__main__':

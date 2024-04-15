@@ -163,12 +163,12 @@
   <customwidget>
    <class>myVideoSlider</class>
    <extends>QSlider</extends>
-   <header>myvideoslider.h</header>
+   <header>myDesign_win.myvideoslider</header>
   </customwidget>
   <customwidget>
    <class>QVideoWidget</class>
    <extends>QWidget</extends>
-   <header>QtMultimediaWidgets</header>
+   <header>PyQt5.QtMultimediaWidgets</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
