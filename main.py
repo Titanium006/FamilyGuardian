@@ -7,14 +7,15 @@ import cv2
 
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import QTimer, QDateTime, QUrl
-from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QDialog, QFileDialog
-from PyQt5.QtCore import Qt, QThread, pyqtSignal, QObject, QEvent
-from PyQt5.QtGui import QImage, QPixmap
+from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QDialog, QFileDialog, QGraphicsDropShadowEffect
+from PyQt5.QtCore import Qt, QThread, pyqtSignal, QObject, QEvent, QRect
+from PyQt5.QtGui import QImage, QPixmap, QMouseEvent, QEnterEvent, QColor, QCursor
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from myDesign_win.home import Ui_MainWindow
 from myDesign_win.videoReplay import Ui_Form
 from utils.PageTable import PageTable
+import sqlite3 as sql
 
 from ultralytics import YOLO
 
@@ -62,7 +63,7 @@ class DetThread(QThread):
 
             if success:
                 # 在该帧上运行YOLOv8推理
-                results = self.model(frame)
+                results = self.model(frame, verbose=False)
 
                 # 在帧上可视化结果
                 annotated_frame = results[0].plot()
@@ -96,123 +97,6 @@ class DetThread(QThread):
         self.send_curTime.emit(timeplay)
 
 
-class VideoReplayWindow(QWidget):
-    ui = Ui_Form()
-    closing = pyqtSignal()
-    videoPath = ''
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.ui.setupUi(self)
-        # VideoReplay
-        self.sld_video_pressed = False
-        self.player = QMediaPlayer()
-        self.player.setVideoOutput(self.ui.wgt_video)
-        self.ui.btn_open.clicked.connect(self.openVideoFile)
-        self.ui.btn_play.clicked.connect(self.playVideo)
-        self.ui.btn_stop.clicked.connect(self.pauseVideo)
-        self.player.positionChanged.connect(self.changeSlider)
-        self.ui.sld_video.setTracking(False)
-        self.ui.sld_video.sliderReleased.connect(self.releaseSlider)
-        self.ui.sld_video.sliderPressed.connect(self.pressSlider)
-        self.ui.sld_video.sliderMoved.connect(self.moveSlider)
-        self.ui.sld_video.ClickedValue.connect(self.clickedSlider)
-        self.ui.sld_audio.valueChanged.connect(self.volumnChange)
-
-    # VideoReplay
-    def volumnChange(self, position):
-        volume = round(position / self.ui.sld_audio.maximum() * 100)
-        print("volume %f" % volume)
-        self.player.setVolume(volume)
-        self.ui.lab_audio.setText("volume:" + str(volume) + "%")
-
-    def clickedSlider(self, position):
-        if self.player.duration() > 0:
-            video_position = int((position / 100) * self.player.duration())
-            self.player.setPosition(video_position)
-            self.ui.lab_video.setText("%.2f%%" % position)
-        else:
-            self.ui.sld_video.setValue(0)
-
-    def moveSlider(self, position):
-        self.sld_video_pressed = True
-        if self.player.duration() > 0:
-            video_position = int((position / 100) * self.player.duration())
-            self.player.setPosition(video_position)
-            self.ui.lab_video.setText("%.2f%%" % position)
-
-    def pressSlider(self):
-        self.sld_video_pressed = True
-        print("pressed")
-
-    def releaseSlider(self):
-        self.sld_video_pressed = False
-
-    def changeSlider(self, position):
-        if not self.sld_video_pressed:
-            self.videoLength = self.player.duration() + 0.1
-            self.ui.sld_video.setValue(round((position / self.videoLength) * 100))
-            self.ui.lab_video.setText("%.2f%%" % ((position / self.videoLength) * 100))
-
-    def openVideoFile(self):
-        # video_url = QUrl(self.videoPath)
-        # self.player.setMedia(QMediaContent(video_url))
-        self.player.setMedia(QMediaContent(QFileDialog.getOpenFileUrl()[0]))  # 选取视频文件
-        self.player.play()
-
-    def playVideo(self):
-        self.player.play()
-
-    def pauseVideo(self):
-        self.player.pause()
-
-    def closeEvent(self, event: QtGui.QCloseEvent) -> None:
-        print('进入closeEvent!')
-        if self.player.state() == QMediaPlayer.PlayingState or self.player.state() == QMediaPlayer.PausedState:
-            self.player.stop()
-            # self.player.deleteLater()
-        # print('发送关信号前')
-        # self.closing.emit()
-        # print('发送关闭信号后')
-        super().closeEvent(event)
-
-
-class VideoReplayThread(QThread):
-    is_running = True
-
-    def __init__(self, videoPath):
-        super(VideoReplayThread, self).__init__()
-        # self.videoPath = videoPath
-        self.videoWindow = VideoReplayWindow()
-        self.videoWindow.videoPath = videoPath
-
-    def run(self):
-        self.videoWindow.show()
-        # time.sleep(20)
-        # self.videoWindow.closing.connect(self.stop)
-        # self.videoWindow.close()
-
-        while self.is_running:
-            time.sleep(1)
-            continue
-        if self.videoWindow.isVisible():
-            print('关闭子线程窗口')
-            self.videoWindow.close()
-            print('After 子线程窗口 close')
-
-        print('子线程结束')
-
-        # self.openVideoFile()
-
-    def stop(self):
-        self.is_running = False
-
-    def quit(self) -> None:
-        self.is_running = False
-        print('Thread is Quitting!')
-        super().quit()
-
-
 class MainWindow(QMainWindow):
     ui = Ui_MainWindow()
     isMaxi = False
@@ -228,15 +112,31 @@ class MainWindow(QMainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.ui.setupUi(self)
+        # Ui
+        self.setWindowFlags(Qt.Window | Qt.FramelessWindowHint | Qt.WindowSystemMenuHint |
+                            Qt.WindowMinimizeButtonHint | Qt.WindowMaximizeButtonHint)
         self.ui.closeButton.clicked.connect(self.myClose)
+        self.ui.closeButton.setToolTip('关闭')
         self.ui.miniButton.clicked.connect(self.showMinimized)
+        self.ui.miniButton.setToolTip('最小化')
         self.ui.maxiButton.clicked.connect(self.maxOrRestore)
+        self.ui.maxiButton.setToolTip('最大化')
         self.setWindowFlag(Qt.FramelessWindowHint)
         self.ui.page1Button.clicked.connect(lambda: self.gotoBlock(0))
         self.ui.page2Button.clicked.connect(lambda: self.gotoBlock(1))
         self.ui.page3Button.clicked.connect(lambda: self.gotoBlock(2))
         self.ui.page4Button.clicked.connect(lambda: self.gotoBlock(3))
         self.ui.page5Button.clicked.connect(lambda: self.gotoBlock(4))
+        self.ui.titleGroupBox.mouseDoubleClickEvent = self.onTitleBarDoubleClicked
+        self.setMouseTracking(True)
+        self.ui.centralwidget.setMouseTracking(True)
+        self.ui.titleGroupBox.setMouseTracking(True)
+        self.ui.closeButton.setMouseTracking(True)
+        self.ui.maxiButton.setMouseTracking(True)
+        self.ui.miniButton.setMouseTracking(True)
+        self.ui.groupBox.installEventFilter(self)
+        self.m_flag = False
+        self.direction = None
 
         # PageTable
         header = ["T1", "T2", "T3", "T4", "T5", "T6", "T7"]
@@ -272,6 +172,56 @@ class MainWindow(QMainWindow):
     def gotoBlock(self, index: int):
         self.ui.stackedWidget.setCurrentIndex(index)
 
+    def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:
+        # print('Enter MouseMoveEvent!')
+        self.right_edge = QRect(self.width() - 10, 0, self.width(), self.height())
+        self.bottom_edge = QRect(0, self.height() - 10, self.width() - 25, self.height())
+        self.right_bottom_edge = QRect(self.width() - 25, self.height() - 10, self.width(), self.height())
+
+        self.windowRange = QRect(0, 0, self.width() - 25, self.height() - 10)
+
+        if not self.isMaximized():
+            if self.bottom_edge.contains(event.pos()):
+                self.setCursor(Qt.SizeVerCursor)
+                self.direction = 'bottom'
+            elif self.right_edge.contains(event.pos()):
+                self.setCursor(Qt.SizeHorCursor)
+                self.direction = 'right'
+            elif self.right_bottom_edge.contains(event.pos()):
+                self.setCursor(Qt.SizeFDiagCursor)
+                self.direction = 'right_bottom'
+            elif self.windowRange.contains(event.pos()):
+                self.setCursor(Qt.ArrowCursor)
+                self.direction = 'None'
+                if Qt.LeftButton and self.m_flag:
+                    self.move(QCursor.pos() - self.m_Position)
+
+    def mouseReleaseEvent(self, event: QtGui.QMouseEvent) -> None:
+        self.m_flag = False
+
+    def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
+        self.m_Position = event.pos()
+        if event.button() == Qt.LeftButton:
+            if self.direction == 'bottom':
+                self.windowHandle().startSystemResize(Qt.BottomEdge)
+            elif self.direction == 'right':
+                self.windowHandle().startSystemResize(Qt.RightEdge)
+            elif self.direction == 'right_bottom':
+                self.windowHandle().startSystemResize(Qt.RightEdge | Qt.BottomEdge)
+            elif 0 < self.m_Position.x() < self.ui.titleGroupBox.pos().x() + self.ui.titleGroupBox.width() and \
+                    0 < self.m_Position.y() < self.ui.titleGroupBox.pos().y() + self.ui.titleGroupBox.height():
+                self.m_flag = True
+
+    def eventFilter(self, obj: 'QObject', event: 'QEvent') -> bool:
+        if isinstance(event, QEnterEvent):
+            self.setCursor(Qt.ArrowCursor)
+            self.direction = None
+        return super().eventFilter(obj, event)
+
+    def onTitleBarDoubleClicked(self, event: QMouseEvent):
+        if event.buttons() == Qt.LeftButton:
+            self.maxOrRestore()
+
     def maxOrRestore(self):
         if not self.isMaxi:
             self.showMaximized()
@@ -305,16 +255,6 @@ class MainWindow(QMainWindow):
 
     def PageChange(self, currentPage: int):
         self.LoadPage(currentPage)
-
-    # def videoReplay(self):
-    #     path = './v.f100830.mp4'
-    #     replayThread = VideoReplayThread(path)
-    #     self.replayThreads.append(replayThread)
-    #     replayThread.start()
-    #
-    # def checkThread(self):
-    #     for thread in self.replayThreads:
-    #         print(thread.isRunning())
 
     # VideoReplay
     def volumnChange(self, position):

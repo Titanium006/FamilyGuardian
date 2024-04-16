@@ -3,3 +3,4 @@ __pycache__/
 pt
 detect_results
 *.mp4
+*.db
