@@ -1,6 +1,7 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QVBoxLayout, QTableWidget, QAbstractItemView, QHeaderView, QHBoxLayout
 from PyQt5.QtWidgets import QTableWidgetItem
+from PyQt5.QtCore import Qt
 from utils.PageWidget import PageWidget
 
 
@@ -48,5 +49,8 @@ class PageTable(QVBoxLayout):
     def SetData(self, DataList):
         for i in range(len(DataList)):
             Item = DataList[i]
-            for j in range(len(Item)):
-                self.tableWidget.setItem(i, j, QTableWidgetItem(Item[j]))
+            for j in range(len(Item) - 1):
+                qItem = QTableWidgetItem(str(Item[j]))
+                qItem.setTextAlignment(Qt.AlignVCenter | Qt.AlignHCenter)
+                self.tableWidget.setItem(i, j, qItem)
+            self.tableWidget.setCellWidget(i, len(Item) - 1, Item[-1])
