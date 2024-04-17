@@ -21,6 +21,7 @@ from utils.PageButton import PageButton
 import sqlite3 as sql
 
 from ultralytics import YOLO
+from datetime import datetime
 
 QtCore.QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
 
@@ -28,24 +29,45 @@ QtCore.QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
 class DetThread(QThread):
     send_img = pyqtSignal(np.ndarray)
     send_curInsertID = pyqtSignal(int)
-    Timer = QTimer()  # 自定义QTimer类
 
-    def __init__(self, threshold=1000):
+    def __init__(self, videoSavePath, threshold=1000):
         super(DetThread, self).__init__()
         self.curInsertID = 211
         self.source = 0
         self.threshold = threshold  # 设置数据库存储报警信息条数的阈值, 超过这个阈值就开始删除老数据
-        self.model = YOLO('./pt/best.pt')
-        self.save_folder = './detect_results/'
+        self.model = YOLO('./pt/best.pt')       # 这个先不改, 看看后面模型放哪先
+        self.save_folder = videoSavePath + '/detect_results/'
         os.makedirs(self.save_folder, exist_ok=True)
-        folder_count = 1
-        while os.path.exists(os.path.join(self.save_folder, str(folder_count))):
-            folder_count += 1
-        self.save_folder = os.path.join(self.save_folder, str(folder_count))
-        os.makedirs(self.save_folder)
+        self._initSaveTime()
+
+    def _initSaveTime(self):
+        current_time = datetime.now()
+        current_time_str = current_time.strftime("%Y%m%d")  # 将 current_time 转换为字符串形式，格式为年月日时分秒
+        self.save_folder = os.path.join(self.save_folder, current_time_str)
+        os.makedirs(self.save_folder, exist_ok=True)
+        # 初始化各类别的计数器和开始时间
+        self.smoke_count = 0
+        self.fire_count = 0
+        self.person_count = 0
+        self.smoke_start_time = None
+        self.fire_start_time = None
+        self.person_start_time = None
+        self.smoke_locked = False
+        self.fire_locked = False
+        self.person_locked = False
+        # 添加结束时间变量
+        self.smoke_end_count = 0
+        self.fire_end_count = 0
+        self.person_end_count = 0
+        self.smoke_end_time = None
+        self.fire_end_time = None
+        self.person_end_time = None
 
     def run(self):
         self.cap = cv2.VideoCapture(self.source)
+        current_time = datetime.now()
+        current_time_str = current_time.strftime("%Y%m%d%H%M")  # 将 current_time 转换为字符串形式，格式为年月日时分秒
+        video_filename = f"{current_time_str}.mp4"  # 使用 current_time_str 作为视频文件名的一部分
         # 视频帧计数器
         frame_count = 0
 
@@ -54,17 +76,76 @@ class DetThread(QThread):
         frame_height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
         # 视频帧写入对象
-        self.out = cv2.VideoWriter(os.path.join(self.save_folder, 'output.mp4'), cv2.VideoWriter_fourcc(*'XVID'), 30,
+        self.out = cv2.VideoWriter(os.path.join(self.save_folder, video_filename), cv2.VideoWriter_fourcc(*'XVID'), 30,
                                    (frame_width, frame_height))
 
         # 遍历视频帧
         while self.cap.isOpened():
             # 从视频中读取一帧
             success, frame = self.cap.read()
+            current_frame_time = datetime.now()
 
             if success:
                 # 在该帧上运行YOLOv8推理
                 results = self.model(frame, verbose=False)
+                for r in results:
+                    # 检查张量是否为空
+                    if r.boxes.cls.numel() == 0:
+                        # 在这里添加适当的处理代码，例如跳过当前循环迭代
+                        continue
+                    cls = int(r.boxes.cls[0])
+                    # 检测到烟雾
+                    if cls == 0:
+                        # 如果是第一次检测到烟雾，记录开始时间
+                        if self.smoke_start_time is None:
+                            self.smoke_start_time = current_frame_time
+
+                        if not self.smoke_locked:
+                            self.check_reset_smoke_start_time(current_frame_time)
+                            self.smoke_count += 1  # 每次检测到人，计数器加1
+
+                    # 检测到火焰
+                    elif cls == 1:
+                        # 如果是第一次检测到火焰，记录开始时间
+                        if self.fire_start_time is None:
+                            self.fire_start_time = current_frame_time
+
+                        if not self.fire_locked:
+                            self.check_reset_fire_start_time(current_frame_time)
+                            self.fire_count += 1  # 每次检测到人，计数器加1
+
+                    # 检测到人
+                    elif cls == 2:
+                        # 如果是第一次检测到人，记录开始时间
+                        if self.person_start_time is None:
+                            self.person_start_time = current_frame_time
+
+                        if not self.person_locked:
+                            self.check_reset_person_start_time(current_frame_time)
+                            self.person_count += 1  # 每次检测到人，计数器加1
+                        # print(self.person_count)
+
+                    # 添加结束时间记录逻辑
+                    if self.smoke_start_time is not None and self.smoke_locked:
+                        if self.smoke_end_time is None:
+                            self.smoke_end_time = current_frame_time
+                        if cls == 0:
+                            self.smoke_end_count += 1
+
+                    if self.fire_start_time is not None and self.fire_locked:
+                        if self.fire_end_time is None:
+                            self.fire_end_time = current_frame_time
+                        if cls == 1:
+                            self.fire_end_count += 1
+
+                    if self.person_start_time is not None and self.person_locked:
+                        if self.person_end_time is None:
+                            self.person_end_time = current_frame_time
+                        if cls == 2:
+                            self.person_end_count += 1
+                            # print(self.person_end_count)
+
+                    self.check_reset_end_time(current_frame_time)
 
                 # 在帧上可视化结果
                 annotated_frame = results[0].plot()
@@ -74,10 +155,12 @@ class DetThread(QThread):
                 timestr = timestr + " Camera" + str(self.source)
                 cv2.putText(annotated_frame, timestr, (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1)
 
+                # # 保存视频帧
+                # cv2.imwrite(os.path.join(self.save_folder, f'{frame_count}.jpg'), annotated_frame)
+
                 # 写入视频
                 self.out.write(annotated_frame)
 
-                # self.updateTime()
                 self.send_img.emit(annotated_frame)
 
                 # 计数器自增
@@ -86,6 +169,118 @@ class DetThread(QThread):
                 # 如果视频结束则中断循环
                 break
         # pass
+
+    def check_reset_smoke_start_time(self, current_time):
+        # 计算当前时间和最后一次记录时间的差值
+        time_diff = (current_time - self.smoke_start_time).total_seconds() * 1000
+
+        if time_diff >= 1000:  # 超过一秒
+            if self.smoke_count < 5:
+                # 如果计数小于5，重置计数器和开始时间
+                self.smoke_count = 0
+                self.smoke_start_time = current_time
+            else:
+                # 如果计数大于等于5，锁定计数器和开始时间，停止计数
+                self.smoke_locked = True  # 假设有一个 locked 属性用于锁定计数器
+
+    def check_reset_fire_start_time(self, current_time):
+        # 计算当前时间和最后一次记录时间的差值
+        time_diff = (current_time - self.fire_start_time).total_seconds() * 1000
+
+        if time_diff >= 1000:  # 超过一秒
+            if self.fire_count < 5:
+                # 如果计数小于5，重置计数器和开始时间
+                self.fire_count = 0
+                self.fire_start_time = current_time
+            else:
+                # 如果计数大于等于5，锁定计数器和开始时间，停止计数
+                self.fire_locked = True  # 假设有一个 locked 属性用于锁定计数器
+
+    def check_reset_person_start_time(self, current_time):
+        # 计算当前时间和最后一次记录时间的差值
+        time_diff = (current_time - self.person_start_time).total_seconds() * 1000
+
+        if time_diff >= 1000:  # 超过一秒
+            if self.person_count < 5:
+                # 如果计数小于5，重置计数器和开始时间
+                self.person_count = 0
+                self.person_start_time = current_time
+            else:
+                # 如果计数大于等于5，锁定计数器和开始时间，停止计数
+                self.person_locked = True  # 假设有一个 locked 属性用于锁定计数器
+
+    def check_reset_end_time(self, current_time):
+        # 添加结束时间处理逻辑
+        if self.smoke_end_time is not None:
+            if (current_time - self.smoke_end_time).total_seconds() * 1000 >= 1000:
+                if self.smoke_end_count < 5:
+                    saved_successfully = self.save_if_threshold_exceeded(self.smoke_count, self.smoke_end_count, self.smoke_start_time,
+                                                    self.smoke_end_time, '0')
+                    # 检查文件是否保存成功
+                    if saved_successfully:
+                        self.smoke_count = 0
+                        self.smoke_end_count = 0
+                        self.smoke_start_time = None
+                        self.smoke_end_time = None
+                        self.smoke_locked = False
+                else:
+                    self.smoke_end_count = 0
+                    self.smoke_end_time = None
+
+        if self.fire_end_time is not None:
+            if (current_time - self.fire_end_time).total_seconds() * 1000 >= 1000:
+                if self.fire_end_count < 5:
+                    saved_successfully = self.save_if_threshold_exceeded(self.fire_count, self.fire_end_count, self.fire_start_time,
+                                                    self.fire_end_time, '1')
+                    # 检查文件是否保存成功
+                    if saved_successfully:
+                        self.fire_count = 0
+                        self.fire_end_count = 0
+                        self.fire_start_time = None
+                        self.fire_end_time = None
+                        self.fire_locked = False
+                else:
+                    self.fire_end_count = 0
+                    self.fire_end_time = None
+
+        if self.person_end_time is not None:
+            if (current_time - self.person_end_time).total_seconds() * 1000 >= 1000:
+                if self.person_end_count < 5:
+                    saved_successfully = self.save_if_threshold_exceeded(self.person_count, self.person_end_count, self.person_start_time,
+                                                    self.person_end_time, '2')
+                    # 检查文件是否保存成功
+                    if saved_successfully:
+                        self.person_count = 0
+                        self.person_end_count = 0
+                        self.person_start_time = None
+                        self.person_end_time = None
+                        self.person_locked = False
+                else:
+                    self.person_end_count = 0
+                    self.person_end_time = None
+
+    def save_if_threshold_exceeded(self, start_count, end_count, start_time, end_time, cls):
+        # 如果计数器超过阈值
+        if start_count > 5 > end_count:
+            start_time_str = start_time.strftime('%Y-%m-%d_%H-%M-%S')
+            end_time_str = end_time.strftime('%Y-%m-%d_%H-%M-%S')
+            filename = f'{cls}_' + start_time_str + '_' + end_time_str + '.txt'
+            # 构建文件路径
+            filepath = os.path.join(self.save_folder, filename)
+            # 保存开始时间和类别到文本文件
+            self.saveTimestamp(start_time, end_time, filepath, cls)
+            return True
+        else:
+            return False
+
+    def saveTimestamp(self, start_time, end_time, filepath, cls):
+        # 格式化开始时间和结束时间为字符串
+        start_time_str = start_time.strftime('%Y-%m-%d_%H-%M-%S')
+        end_time_str = end_time.strftime('%Y-%m-%d_%H-%M-%S')
+
+        # 将时间戳写入文本文件
+        with open(filepath, 'w') as file:
+            file.write('{} {} {}'.format(cls, start_time_str, end_time_str))
 
     def quit(self) -> None:
         self.cap.release()
@@ -111,7 +306,7 @@ class MainWindow(QMainWindow):
 
     ##############
     searchRowCnt = 10
-    videoFileSavePath = 'D:/大三下/软工课设/HomeSurface/detect_results'
+    videoFileSavePath = 'D:/大三下/软工课设/HomeSurface'
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -373,7 +568,7 @@ class MainWindow(QMainWindow):
 
     def _initDetThread(self):
         # detThread
-        self.detThread = DetThread(self.threshold)
+        self.detThread = DetThread(self.videoFileSavePath, self.threshold)
         self.detThread.send_img.connect(lambda x: self.show_video(x, self.ui.out_video))
         self.detThread.send_curInsertID.connect(lambda x: self.updateCurInsertID(x))
         self.detThread.start()

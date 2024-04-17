@@ -6,7 +6,7 @@ from utils.PageWidget import PageWidget
 
 
 class PageTable(QVBoxLayout):
-    PageSize = 10
+    # PageSize = 10
 
     # pageWidget = PageWidget()
     # tableWidget = QTableWidget()

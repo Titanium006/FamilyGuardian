@@ -9,15 +9,14 @@ from myDesign_win.PageWidget_ui import Ui_PageWidget
 class PageWidget(QWidget):
     send_curPage = pyqtSignal(int)
 
-    ui = Ui_PageWidget()
-    blockSize = 0
-    maxPage = 0
-    pageLabels = []
-    currentPage = 0
-
     def __init__(self, blockSize=3, parent=None):
         super().__init__(parent)
+        self.ui = Ui_PageWidget()
         self.ui.setupUi(self)
+        self.blockSize = 0
+        self.maxPage = 0
+        self.pageLabels = []
+        self.currentPage = 0
         self.setBlockSize(blockSize)
         self.ui.pageLineEdit.installEventFilter(self)
         self.ui.pageLineEdit.setValidator(QIntValidator(1, 10000000))
