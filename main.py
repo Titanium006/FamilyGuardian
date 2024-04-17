@@ -66,8 +66,8 @@ class DetThread(QThread):
     def run(self):
         self.cap = cv2.VideoCapture(self.source)
         current_time = datetime.now()
-        current_time_str = current_time.strftime("%Y%m%d%H%M")  # 将 current_time 转换为字符串形式，格式为年月日时分秒
-        video_filename = f"{current_time_str}.mp4"  # 使用 current_time_str 作为视频文件名的一部分
+        current_time_str = current_time.strftime("%Y-%m-%d_%H-%M-%S")  # 将 current_time 转换为字符串形式，格式为年月日时分秒
+        self.video_filename = f"{current_time_str}.mp4"  # 使用 current_time_str 作为视频文件名的一部分
         # 视频帧计数器
         frame_count = 0
 
@@ -76,7 +76,10 @@ class DetThread(QThread):
         frame_height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
         # 视频帧写入对象
-        self.out = cv2.VideoWriter(os.path.join(self.save_folder, video_filename), cv2.VideoWriter_fourcc(*'XVID'), 30,
+        ori_fps = int(self.cap.get(cv2.CAP_PROP_FPS))
+        if ori_fps == 0:
+            ori_fps = 25
+        self.out = cv2.VideoWriter(os.path.join(self.save_folder, self.video_filename), cv2.VideoWriter_fourcc(*'XVID'), 3,
                                    (frame_width, frame_height))
 
         # 遍历视频帧
@@ -285,6 +288,14 @@ class DetThread(QThread):
     def quit(self) -> None:
         self.cap.release()
         self.out.release()
+        time.sleep(2)
+        filepath = os.path.join(self.save_folder, self.video_filename)
+        if os.path.isfile(filepath):
+            basename, extension = os.path.splitext(self.video_filename)
+            endTimeStr = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())
+            new_name = f"{basename}_{endTimeStr}{extension}"
+            new_file_path = os.path.join(self.save_folder, new_name)
+            os.rename(filepath, new_file_path)
         super().quit()
 
 
