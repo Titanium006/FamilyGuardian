@@ -28,7 +28,7 @@ pageCount = 15
 
 class DetThread(QThread):
     send_img = pyqtSignal(np.ndarray)
-    send_curTime = pyqtSignal(str)
+    # send_curTime = pyqtSignal(str)
     Timer = QTimer()  # 自定义QTimer类
 
     def __init__(self):
@@ -68,13 +68,15 @@ class DetThread(QThread):
                 # 在帧上可视化结果
                 annotated_frame = results[0].plot()
 
-                # # 保存视频帧
-                # cv2.imwrite(os.path.join(self.save_folder, f'{frame_count}.jpg'), annotated_frame)
+                # 图像上写入当前时间
+                timestr = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())  # 获取当前时间，格式yyyy-mm-dd HH:MM:ss
+                timestr = timestr + " Camera" + str(self.source)
+                cv2.putText(annotated_frame, timestr, (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1)
 
                 # 写入视频
                 self.out.write(annotated_frame)
 
-                self.updateTime()
+                # self.updateTime()
                 self.send_img.emit(annotated_frame)
 
                 # 计数器自增
@@ -89,12 +91,12 @@ class DetThread(QThread):
         self.out.release()
         super().quit()
 
-    def updateTime(self):
-        time = QDateTime.currentDateTime()  # 获取现在的时间
-        # timeplay = time.toString('yyyy-MM-dd hh:mm:ss dddd')  # 设置显示时间的格式
-        timeplay = time.toString('yyyy-MM-dd hh:mm:ss')  # 设置显示时间的格式
-        # print(timeplay)
-        self.send_curTime.emit(timeplay)
+    # def updateTime(self):
+    #     time = QDateTime.currentDateTime()  # 获取现在的时间
+    #     # timeplay = time.toString('yyyy-MM-dd hh:mm:ss dddd')  # 设置显示时间的格式
+    #     timeplay = time.toString('yyyy-MM-dd hh:mm:ss')  # 设置显示时间的格式
+    #     # print(timeplay)
+    #     self.send_curTime.emit(timeplay)
 
 
 class MainWindow(QMainWindow):
@@ -147,7 +149,7 @@ class MainWindow(QMainWindow):
 
         self.detThread = DetThread()
         self.detThread.send_img.connect(lambda x: self.show_video(x, self.ui.out_video))
-        self.detThread.send_curTime.connect(lambda x: self.ui.curTimeLabel.setText(x))
+        # self.detThread.send_curTime.connect(lambda x: self.ui.curTimeLabel.setText(x))
         self.detThread.start()
 
         # VideoReplay

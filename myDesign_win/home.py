@@ -85,20 +85,6 @@ class Ui_MainWindow(object):
         self.page.setObjectName("page")
         self.verticalLayout_8 = QtWidgets.QVBoxLayout(self.page)
         self.verticalLayout_8.setObjectName("verticalLayout_8")
-        self.curTimeLabel = QtWidgets.QLabel(self.page)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Minimum)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.curTimeLabel.sizePolicy().hasHeightForWidth())
-        self.curTimeLabel.setSizePolicy(sizePolicy)
-        self.curTimeLabel.setMinimumSize(QtCore.QSize(0, 59))
-        self.curTimeLabel.setStyleSheet("background-color: rgba(0, 0, 0, 150);\n"
-"font: 11pt \"Arvo\";\n"
-"color: white;")
-        self.curTimeLabel.setText("")
-        self.curTimeLabel.setAlignment(QtCore.Qt.AlignCenter)
-        self.curTimeLabel.setObjectName("curTimeLabel")
-        self.verticalLayout_8.addWidget(self.curTimeLabel)
         self.out_video = QtWidgets.QLabel(self.page)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
@@ -223,7 +209,7 @@ class Ui_MainWindow(object):
         MainWindow.setCentralWidget(self.centralwidget)
 
         self.retranslateUi(MainWindow)
-        self.stackedWidget.setCurrentIndex(2)
+        self.stackedWidget.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
