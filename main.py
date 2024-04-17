@@ -7,8 +7,9 @@ import numpy as np
 import cv2
 
 from PyQt5 import QtCore, QtGui
-from PyQt5.QtCore import QTimer, QDateTime, QUrl
-from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QDialog, QFileDialog, QGraphicsDropShadowEffect, QMessageBox
+from PyQt5.QtCore import QTimer, QDateTime, QUrl, QDate
+from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QDialog, QFileDialog, QGraphicsDropShadowEffect, \
+    QMessageBox
 from PyQt5.QtCore import Qt, QThread, pyqtSignal, QObject, QEvent, QRect
 from PyQt5.QtGui import QImage, QPixmap, QMouseEvent, QEnterEvent, QColor, QCursor
 from PyQt5.QtMultimediaWidgets import QVideoWidget
@@ -109,7 +110,8 @@ class MainWindow(QMainWindow):
     totalLinesCnt = 0  # 当前获取到的报警条数
 
     ##############
-    replayThreads = []
+    searchRowCnt = 10
+    videoFileSavePath = 'D:/大三下/软工课设/HomeSurface/detect_results'
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -119,6 +121,7 @@ class MainWindow(QMainWindow):
         self._initDetThread()
         self._initVideoReplay()
         self._initDatabase()
+        self._initVideoSearch()
 
     def testReplay(self, infoGroup):
         seperator = ' '
@@ -126,7 +129,7 @@ class MainWindow(QMainWindow):
         infoGroup[-2] = str(infoGroup[-2])
         result = seperator.join(infoGroup)
         print(result)
-        QMessageBox.information(self, '', result)     # 注意是.information 不是构造函数
+        QMessageBox.information(self, '', result)  # 注意是.information 不是构造函数
 
     def myClose(self):
         self.detThread.quit()
@@ -208,8 +211,9 @@ class MainWindow(QMainWindow):
         # 检查当前的插入id号, 分(满)和(不满)两种情况处理
         if self.totalLinesCnt < self.threshold:  # 小于阈值, 正常加载数据
             # 这里应该是设置从pageIndex*self.alarmRowCount的位置开始读取self.alarmRowCount个    或许还是设计一个当前读取到的坐标(指针)比较好
-            c.execute("SELECT startTime, endTime, alarmType, camNo FROM alarmRecord ORDER BY id DESC LIMIT ? OFFSET ?", (self.alarmRowCount,
-                                                                                      self.alarmRowCount * (pageIndex - 1)))
+            c.execute("SELECT startTime, endTime, alarmType, camNo FROM alarmRecord ORDER BY id DESC LIMIT ? OFFSET ?",
+                      (self.alarmRowCount,
+                       self.alarmRowCount * (pageIndex - 1)))
             rows = c.fetchall()
             j = 0
             for i, row in enumerate(rows, self.alarmRowCount * (pageIndex - 1) + 1):
@@ -340,6 +344,32 @@ class MainWindow(QMainWindow):
             button.setText('回 放')
             button.send_myNo.connect(lambda x: self.testReplay(x))
             self.pageButtons.append(button)
+
+    def _initVideoSearch(self):
+        self.ui.dateEdit.setDate(QDate.currentDate())
+        header = ["序号", "录像名称", "开始时间", "结束时间", "摄像头编号", "文件大小", "操作"]
+        self.searchTable = PageTable(header, self.searchRowCnt)
+        self.ui.searchLayout.addLayout(self.searchTable)
+        self.searchTable.pageWidget.send_curPage.connect(lambda x: self.searchPageChange(x))
+        self.ui.queryButton.clicked.connect(self.BtnQureyClick)
+        self.searchPageButtons = []
+        for i in range(self.searchRowCnt):
+            button = PageButton()
+            button.btnNo = i + 1
+            button.setText('回 放')
+            button.send_myNo.connect(lambda x: self.testReplay(x))
+            self.searchPageButtons.append(button)
+
+    def searchPageChange(self, currentPage: int):
+        self.LoadSearchPage(currentPage)
+
+    def LoadSearchPage(self, currentPage: int):
+        pass
+
+    def BtnQureyClick(self):
+        # 获取QDateEdit里面的内容, 然后根据它去查找视频回放 (定义好文件夹和视频的保存路径以及文件名称
+        selected_date = self.ui.dateEdit.date()
+        print("Selected Date: ", selected_date.toString("yyyy-MM-dd"))
 
     def _initDetThread(self):
         # detThread
