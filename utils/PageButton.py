@@ -11,6 +11,7 @@ class PageButton(QPushButton):
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.fileName = ''
 
     def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
         print('Enter PageButton Press!')

@@ -1,6 +1,7 @@
 import math
 import sys
 import os
+import re
 import time
 
 import numpy as np
@@ -44,6 +45,7 @@ class DetThread(QThread):
         current_time = datetime.now()
         current_time_str = current_time.strftime("%Y%m%d")  # 将 current_time 转换为字符串形式，格式为年月日时分秒
         self.save_folder = os.path.join(self.save_folder, current_time_str)
+        print('Current save_folder is {}!'.format(self.save_folder))
         os.makedirs(self.save_folder, exist_ok=True)
         # 初始化各类别的计数器和开始时间
         self.smoke_count = 0
@@ -264,10 +266,11 @@ class DetThread(QThread):
 
     def save_if_threshold_exceeded(self, start_count, end_count, start_time, end_time, cls):
         # 如果计数器超过阈值
+        print('Enter save_if_threshold_exceeded!')
         if start_count > 5 > end_count:
             start_time_str = start_time.strftime('%Y-%m-%d_%H-%M-%S')
             end_time_str = end_time.strftime('%Y-%m-%d_%H-%M-%S')
-            filename = f'{cls}_' + start_time_str + '_' + end_time_str + '.txt'
+            filename = f'{cls}_' + start_time_str + '__' + end_time_str + '.txt'
             # 构建文件路径
             filepath = os.path.join(self.save_folder, filename)
             # 保存开始时间和类别到文本文件
@@ -280,7 +283,7 @@ class DetThread(QThread):
         # 格式化开始时间和结束时间为字符串
         start_time_str = start_time.strftime('%Y-%m-%d_%H-%M-%S')
         end_time_str = end_time.strftime('%Y-%m-%d_%H-%M-%S')
-
+        print('Ready to write {}!'.format(filepath))
         # 将时间戳写入文本文件
         with open(filepath, 'w') as file:
             file.write('{} {} {}'.format(cls, start_time_str, end_time_str))
@@ -293,7 +296,7 @@ class DetThread(QThread):
         if os.path.isfile(filepath):
             basename, extension = os.path.splitext(self.video_filename)
             endTimeStr = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())
-            new_name = f"{basename}_{endTimeStr}{extension}"
+            new_name = f"{basename}_{endTimeStr}_{self.source}{extension}"
             new_file_path = os.path.join(self.save_folder, new_name)
             os.rename(filepath, new_file_path)
         super().quit()
@@ -318,6 +321,7 @@ class MainWindow(QMainWindow):
     ##############
     searchRowCnt = 10
     videoFileSavePath = 'D:/大三下/软工课设/HomeSurface'
+    SearchDatalist = [[]]
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -333,8 +337,9 @@ class MainWindow(QMainWindow):
         seperator = ' '
         infoGroup[-1] = str(infoGroup[-1])
         infoGroup[-2] = str(infoGroup[-2])
+        # print(infoGroup)
         result = seperator.join(infoGroup)
-        print(result)
+        # print(result)
         QMessageBox.information(self, '', result)  # 注意是.information 不是构造函数
 
     def myClose(self):
@@ -350,6 +355,7 @@ class MainWindow(QMainWindow):
             c = self.conn.cursor()
             c.execute("SELECT COUNT(*) FROM alarmRecord")
             self.totalLinesCnt = c.fetchone()[0]
+            self.BtnLoadDataClick()
             self.ui.stackedWidget.setCurrentIndex(index)
 
     def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:
@@ -570,12 +576,85 @@ class MainWindow(QMainWindow):
         self.LoadSearchPage(currentPage)
 
     def LoadSearchPage(self, currentPage: int):
-        pass
+        self.SearchDatalist.clear()
+        leftBorfer = (currentPage - 1) * self.searchRowCnt
+        rightBorder = currentPage * self.searchRowCnt
+        if currentPage * self.searchRowCnt > len(self.mp4Files):
+            rightBorder = len(self.mp4Files)
+        for i in range(leftBorfer, rightBorder):
+            button = self.searchPageButtons[i % self.searchRowCnt]
+            button.startTime = self.timestampGroup[i][0]
+            button.endTime = self.timestampGroup[i][-1]
+            button.camNo = self.cameraNums[i]
+            button.btnNo = (i + 1) % self.searchRowCnt
+            if button.btnNo == 0:
+                button.btnNo = self.searchRowCnt
+            button.fileName = self.mp4Files[i]
+            tempList = [str(i + 1)] + [self.mp4Files[i]] + self.timestampGroup[i] + [str(self.cameraNums[i])] + \
+                       [str(self.fileSizes[i])] + [self.searchPageButtons[i % self.searchRowCnt]]
+            self.SearchDatalist.append(tempList)
+        print(self.SearchDatalist)
+        self.searchTable.SetData(self.SearchDatalist)
 
     def BtnQureyClick(self):
         # 获取QDateEdit里面的内容, 然后根据它去查找视频回放 (定义好文件夹和视频的保存路径以及文件名称
         selected_date = self.ui.dateEdit.date()
         print("Selected Date: ", selected_date.toString("yyyy-MM-dd"))
+        folderName = selected_date.toString("yyyyMMdd")
+        print(folderName)
+        if os.path.exists(os.path.join(self.videoFileSavePath + '/detect_results', folderName)):
+            self.mp4Files, self.fileSizes = self.get_mp4_files(os.path.join(self.videoFileSavePath + '/detect_results', folderName))
+            self.timestampGroup = []
+            self.cameraNums = []
+            for mp4file in self.mp4Files:
+                timestamps, cameraNumber = self.extract_timestamps_cameraNumber(mp4file)
+                tmpstamp = []
+                for timestamp in timestamps:
+                    tmpstamp.append(self.transform_timestamp(timestamp))
+                self.timestampGroup.append(tmpstamp)
+                self.cameraNums.append(cameraNumber)
+            self.searchTable.pageWidget.setMaxPage(math.ceil(len(self.mp4Files) / self.searchRowCnt))
+            self.searchTable.pageWidget.setCurrentPage(1, True)
+            self.LoadSearchPage(1)
+        else:
+            QMessageBox.information(self, '', '暂无可查看回放！')
+            return
+
+    def get_mp4_files(self, directory):
+        mp4_files = []
+        file_sizes = []
+        # 获取目录中所有文件和子目录
+        files = os.listdir(directory)
+        pattern = r'\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}_\d+\.mp4$'
+        # 遍历文件列表
+        for file in files:
+            # 构建文件的完整路径
+            file_path = os.path.join(directory, file)
+            # 判断是否为文件以及是否为MP4文件
+            if os.path.isfile(file_path) and file.lower().endswith('.mp4') and re.match(pattern, file):
+                print(os.path.basename(file_path))
+                # 提取文件名部分，并添加到列表中
+                mp4_files.append(os.path.basename(file_path))
+                fileSizeBytes = os.path.getsize(file_path)
+                fileSizeMB = round(fileSizeBytes / (1024 * 1024), 2)
+                file_sizes.append(fileSizeMB)
+        return mp4_files, file_sizes
+
+    def extract_timestamps_cameraNumber(self, filename):
+        # 定义日期时间格式的正则表达式模式
+        pattern = r'\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}'
+        # 在文件名中搜索匹配的日期时间字符串
+        timestamps = re.findall(pattern, filename)
+        parts = filename.split('_')
+        camereNumber = parts[-1].split('.')[0]
+        return timestamps, camereNumber
+
+    def transform_timestamp(self, timestamp):
+        stamplist = timestamp.split('_')
+        # 将时间戳中的 '_' 替换为 ' '，将 '-' 替换为 ':'，得到新的格式
+        transformed_timestamp = stamplist[-1].replace('-', ':')
+        timestamp_new = stamplist[0] + ' ' + transformed_timestamp
+        return timestamp_new
 
     def _initDetThread(self):
         # detThread

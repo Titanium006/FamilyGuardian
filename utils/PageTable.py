@@ -14,7 +14,8 @@ class PageTable(QVBoxLayout):
     def __init__(self, header, rowCount: int):
         super().__init__()
         print(" PageTable init ,rowCount:" + str(rowCount) + ",header size:" + str(len(header)))
-
+        self.rowCount = rowCount
+        self.headerLen = len(header)
         self.tableWidget = QTableWidget(rowCount, len(header))
         self.tableWidget.setWindowTitle("Title")
         self.tableWidget.setHorizontalHeaderLabels(header)
@@ -47,6 +48,23 @@ class PageTable(QVBoxLayout):
         self.tableWidget.horizontalHeader().size()
 
     def SetData(self, DataList):
+        # self.tableWidget.clearContents()
+        # print('Enter SetData!')
+        if len(DataList) < self.rowCount:
+            for i in range(len(DataList), self.rowCount):
+                for j in range(self.headerLen - 1):
+                    # print('Enter Clearout!')
+                    itm = QTableWidgetItem("")
+                    itm.setTextAlignment(Qt.AlignVCenter | Qt.AlignHCenter)
+                    self.tableWidget.setItem(i, j, itm)
+                widget = self.tableWidget.cellWidget(i, self.headerLen - 1)
+                if widget is not None:
+                    widget.hide()
+        else:
+            for i in range(self.rowCount):
+                widget = self.tableWidget.cellWidget(i, self.headerLen - 1)
+                if widget is not None:
+                    widget.show()
         for i in range(len(DataList)):
             Item = DataList[i]
             for j in range(len(Item) - 1):
