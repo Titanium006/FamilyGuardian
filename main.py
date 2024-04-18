@@ -6,25 +6,31 @@ import time
 
 import numpy as np
 import cv2
+import sqlite3 as sql
 
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import QTimer, QDateTime, QUrl, QDate
 from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QDialog, QFileDialog, QGraphicsDropShadowEffect, \
-    QMessageBox
+    QMessageBox, QLineEdit
 from PyQt5.QtCore import Qt, QThread, pyqtSignal, QObject, QEvent, QRect
 from PyQt5.QtGui import QImage, QPixmap, QMouseEvent, QEnterEvent, QColor, QCursor
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from myDesign_win.home import Ui_MainWindow
 from myDesign_win.videoReplay import Ui_Form
+from myDesign_win.newUser import Ui_Dialog as Ui_newUserDialog
+from myDesign_win.loginSurface import Ui_Dialog
 from utils.PageTable import PageTable
 from utils.PageButton import PageButton
-import sqlite3 as sql
+from utils.encryption import func_encrypt_config, func_decrypt_config
+from utils.lineEditValidator import LineEditValidator
 
 from ultralytics import YOLO
 from datetime import datetime
 
 QtCore.QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
+key = b'mysecretpassword'  # 密钥（需要确保安全）
+filepath = 'data/userInfo/users.dat'
 
 
 class DetThread(QThread):
@@ -36,7 +42,7 @@ class DetThread(QThread):
         self.curInsertID = 211
         self.source = 0
         self.threshold = threshold  # 设置数据库存储报警信息条数的阈值, 超过这个阈值就开始删除老数据
-        self.model = YOLO('./pt/best.pt')       # 这个先不改, 看看后面模型放哪先
+        self.model = YOLO('./pt/best.pt')  # 这个先不改, 看看后面模型放哪先
         self.save_folder = videoSavePath + '/detect_results/'
         os.makedirs(self.save_folder, exist_ok=True)
         self._initSaveTime()
@@ -81,7 +87,8 @@ class DetThread(QThread):
         ori_fps = int(self.cap.get(cv2.CAP_PROP_FPS))
         if ori_fps == 0:
             ori_fps = 25
-        self.out = cv2.VideoWriter(os.path.join(self.save_folder, self.video_filename), cv2.VideoWriter_fourcc(*'XVID'), 3,
+        self.out = cv2.VideoWriter(os.path.join(self.save_folder, self.video_filename), cv2.VideoWriter_fourcc(*'XVID'),
+                                   3,
                                    (frame_width, frame_height))
 
         # 遍历视频帧
@@ -219,8 +226,9 @@ class DetThread(QThread):
         if self.smoke_end_time is not None:
             if (current_time - self.smoke_end_time).total_seconds() * 1000 >= 1000:
                 if self.smoke_end_count < 5:
-                    saved_successfully = self.save_if_threshold_exceeded(self.smoke_count, self.smoke_end_count, self.smoke_start_time,
-                                                    self.smoke_end_time, '0')
+                    saved_successfully = self.save_if_threshold_exceeded(self.smoke_count, self.smoke_end_count,
+                                                                         self.smoke_start_time,
+                                                                         self.smoke_end_time, '0')
                     # 检查文件是否保存成功
                     if saved_successfully:
                         self.smoke_count = 0
@@ -235,8 +243,9 @@ class DetThread(QThread):
         if self.fire_end_time is not None:
             if (current_time - self.fire_end_time).total_seconds() * 1000 >= 1000:
                 if self.fire_end_count < 5:
-                    saved_successfully = self.save_if_threshold_exceeded(self.fire_count, self.fire_end_count, self.fire_start_time,
-                                                    self.fire_end_time, '1')
+                    saved_successfully = self.save_if_threshold_exceeded(self.fire_count, self.fire_end_count,
+                                                                         self.fire_start_time,
+                                                                         self.fire_end_time, '1')
                     # 检查文件是否保存成功
                     if saved_successfully:
                         self.fire_count = 0
@@ -251,8 +260,9 @@ class DetThread(QThread):
         if self.person_end_time is not None:
             if (current_time - self.person_end_time).total_seconds() * 1000 >= 1000:
                 if self.person_end_count < 5:
-                    saved_successfully = self.save_if_threshold_exceeded(self.person_count, self.person_end_count, self.person_start_time,
-                                                    self.person_end_time, '2')
+                    saved_successfully = self.save_if_threshold_exceeded(self.person_count, self.person_end_count,
+                                                                         self.person_start_time,
+                                                                         self.person_end_time, '2')
                     # 检查文件是否保存成功
                     if saved_successfully:
                         self.person_count = 0
@@ -534,11 +544,11 @@ class MainWindow(QMainWindow):
                     alarmType INTEGER NOT NULL, 
                     camNo INTEGER NOT NULL)
         ''')
-        # 还要再创建一个用户表
-        c.execute('''CREATE TABLE IF NOT EXISTS userInfo 
-                    (userID TEXT PRIMARY KEY NOT NULL, 
-                    userCode TEXT NOT NULL)
-        ''')
+        # # 还要再创建一个用户表
+        # c.execute('''CREATE TABLE IF NOT EXISTS userInfo
+        #             (userID TEXT PRIMARY KEY NOT NULL,
+        #             userCode TEXT NOT NULL)
+        # ''')
         self.conn.commit()
         # self.conn.close()
 
@@ -603,7 +613,8 @@ class MainWindow(QMainWindow):
         folderName = selected_date.toString("yyyyMMdd")
         print(folderName)
         if os.path.exists(os.path.join(self.videoFileSavePath + '/detect_results', folderName)):
-            self.mp4Files, self.fileSizes = self.get_mp4_files(os.path.join(self.videoFileSavePath + '/detect_results', folderName))
+            self.mp4Files, self.fileSizes = self.get_mp4_files(
+                os.path.join(self.videoFileSavePath + '/detect_results', folderName))
             self.timestampGroup = []
             self.cameraNums = []
             for mp4file in self.mp4Files:
@@ -713,8 +724,207 @@ class MainWindow(QMainWindow):
             print(repr(e))
 
 
+class registerDialog(QDialog):
+    abnormalExit = False  # 用于给程序知道是非正常退出，可以不用展示后面的界面
+    ui = Ui_newUserDialog()
+    userNameValidator = LineEditValidator(
+        fullPatterns=['', r'^[a-zA-Z0-9]{6,12}$'],
+        partialPatterns=['', r'^[a-zA-Z0-9]{1,12}$'],
+        fixupString=''
+    )
+    userPasswordValidator = LineEditValidator(
+        fullPatterns=['', r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z0-9]{8,16}$'],
+        partialPatterns=['', r'^[a-zA-Z0-9]{1,16}$'],
+        fixupString=''
+    )
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.ui.setupUi(self)
+        self.setWindowFlag(Qt.FramelessWindowHint)
+        self.ui.regisMiniButton.clicked.connect(self.showMinimized)
+        self.ui.regisCloseButton.clicked.connect(self.reject)  # 这里要设置让后面的东西别出来了
+        self.ui.userNameEdit.setValidator(self.userNameValidator)
+        self.ui.userNameEdit.installEventFilter(self.userNameValidator)
+        self.ui.userNameEdit.setPlaceholderText('6-12个英文/数字组合')
+        self.ui.passwordEdit.setEchoMode(QLineEdit.Password)
+        self.ui.passwordEdit.setValidator(self.userPasswordValidator)
+        self.ui.passwordEdit.installEventFilter(self.userPasswordValidator)
+        self.ui.passwordEdit.setPlaceholderText('8-16个英文/数字组合(至少一个英文大小写加数字)')
+        self.ui.passwordConfirmEdit.setValidator(self.userPasswordValidator)
+        self.ui.passwordConfirmEdit.installEventFilter(self.userPasswordValidator)
+        self.ui.passwordConfirmEdit.setEchoMode(QLineEdit.Password)
+        self.ui.passwordConfirmEdit.setPlaceholderText('与第一次的输入保持一致')
+        self.ui.registerButton.clicked.connect(self.register)
+        self.databaseName = 'myDB.db'
+        self.conn = sql.connect(self.databaseName, isolation_level=None, uri=True)  # 启用WAL模式
+        QMessageBox.information(self, '', '首次登录，请先创建用户!')
+
+    def register(self):
+        userInput_Name = self.ui.userNameEdit.text()
+        userInput_Password = self.ui.passwordEdit.text()
+        userInput_PasswordConfirm = self.ui.passwordConfirmEdit.text()
+        if len(userInput_Name) == 0 or len(userInput_Password) == 0 or len(userInput_PasswordConfirm) == 0:
+            QMessageBox.information(self, '', '用户名/密码不能为空!')
+            self.ui.userNameEdit.setFocus()
+            return
+        if userInput_Password != userInput_PasswordConfirm:
+            QMessageBox.information(self, '', '两次输入的密码不一致!')
+            self.ui.passwordEdit.clear()
+            self.ui.passwordConfirmEdit.clear()
+            self.ui.passwordEdit.setFocus()
+            return
+        c = self.conn.cursor()
+        userID = func_encrypt_config(key, userInput_Name)
+        userCode = func_encrypt_config(key, userInput_Password)
+        c.execute('INSERT INTO userInfo (userID, userCode) VALUES (?, ?)', (userID, userCode))
+        userFile = open(filepath, 'wb')
+        userInfo = userInput_Name + '\n' + userInput_Password
+        userInfo = func_encrypt_config(key, userInfo)
+        userFile.write(userInfo.encode('utf-8'))
+        userFile.flush()
+        userFile.close()
+        # 注册成功
+        msgBox = QMessageBox()
+        msgBox.setText('注册成功!\n即将转到登陆界面...')
+        timer = QTimer()
+        timer.timeout.connect(msgBox.close)
+        timer.start(3000)
+        msgBox.exec_()
+        self.conn.close()
+        self.accept()
+
+    # def closeAct(self):
+    #     self.abnormalExit = True
+    #     self.close()
+
+
+class loginDialog(QDialog):
+    ui = Ui_Dialog()
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.ui.setupUi(self)
+        self.setWindowFlag(Qt.FramelessWindowHint)
+        self.ui.loginButton.clicked.connect(self.check)
+        self.ui.loginMiniButton.clicked.connect(self.showMinimized)
+        self.ui.loginCloseButton.clicked.connect(self.reject)
+        # self.ui.loginCloseButton.clicked.connect(self.close)
+        self.ui.passwordEdit.setEchoMode(QLineEdit.Password)
+        self.tryLoginTimes = 4
+        self.databaseName = 'myDB.db'
+        self.conn = sql.connect(self.databaseName, isolation_level=None, uri=True)
+
+    def check(self):
+        c = self.conn.cursor()
+        c.execute('SELECT * FROM userInfo')
+        rows = c.fetchall()
+        userInfo = ''
+        for row in rows:
+            userID, userCode = row
+            userInfo = userInfo + func_decrypt_config(key, userID) + '\n' + func_decrypt_config(key, userCode)
+        userInput_Name = self.ui.userNameEdit.text()
+        userInput_Password = self.ui.passwordEdit.text()
+        # userFile = open(filepath, 'rb')
+        # userInfo = userFile.read().decode('utf-8')
+        # userFile.close()
+        # userInfo = func_decrypt_config(key, userInfo)
+        if self.check_credentials(userInfo, userInput_Name, userInput_Password) == 1:
+            print('登录成功!')
+            # QMessageBox.information(self, 'Congratulation!', '登陆成功!')
+            msgBox = QMessageBox()
+            msgBox.setText('登陆成功!')
+            timer = QTimer()
+            timer.timeout.connect(msgBox.close)
+            timer.start(2000)
+            msgBox.exec_()
+            print('Ready to Accept!')
+            self.conn.close()
+            self.accept()
+        elif self.check_credentials(userInfo, userInput_Name, userInput_Password) == 2:
+            print('密码错误!')
+            self.ui.passwordEdit.clear()
+            self.tryLoginTimes -= 1
+            QMessageBox.information(self, '', '密码错误!你还有{}次机会!'.format(self.tryLoginTimes))
+            if self.tryLoginTimes == 0:
+                self.conn.close()
+                self.reject()
+        elif self.check_credentials(userInfo, userInput_Name, userInput_Password) == 3:
+            print('账号错误!')
+            self.ui.userNameEdit.clear()
+            self.ui.passwordEdit.clear()
+            self.ui.userNameEdit.setFocus()
+            self.tryLoginTimes -= 1
+            QMessageBox.information(self, '', '账号错误!你还有{}次机会!'.format(self.tryLoginTimes))
+            if self.tryLoginTimes == 0:
+                self.conn.close()
+                self.reject()
+
+    def check_credentials(self, userinfo, userinput_name, userinput_password):
+        lines = userinfo.splitlines()
+        userNum = [x for x in range(0, len(lines) - 1) if x % 2 == 0]
+        if len(lines) % 2 != 0:
+            raise SystemExit('UserFileError!')
+        for i in userNum:
+            if lines[i] == userinput_name and lines[i + 1] == userinput_password:  # 匹配成功
+                return 1
+            elif lines[i] == userinput_name and lines[i + 1] != userinput_password:  # 密码错误
+                return 2
+            else:  # 账号错误
+                return 3
+        return 0
+
+
+class Controller:
+
+    def __init__(self):
+        if not os.path.exists('data'):
+            os.mkdir('data')
+        if not os.path.exists('data/userInfo'):
+            os.mkdir('data/userInfo')
+        filepath = 'data/userInfo/users.dat'
+        self.databaseName = 'myDB.db'
+        self.conn = sql.connect(self.databaseName, isolation_level=None, uri=True)
+        c = self.conn.cursor()
+        c.execute('''CREATE TABLE IF NOT EXISTS userInfo 
+                    (userID TEXT PRIMARY KEY NOT NULL,
+                    userCode TEXT NOT NULL)
+        ''')
+        self.conn.commit()
+
+    def show_register(self):
+        self.regisDialog = registerDialog()
+        self.regisDialog.setFixedSize(378, 440)
+        return self.regisDialog.exec_()
+
+    def show_login(self):
+        self.logDialog = loginDialog()
+        self.logDialog.setFixedSize(378, 440)
+        return self.logDialog.exec_()
+
+    def openLoginSurface(self):
+        c = self.conn.cursor()
+        c.execute('SELECT COUNT(*) FROM userInfo')
+        result = c.fetchone()[0]
+        self.conn.close()
+        # 如果没有用户账户文件，打开注册界面
+        if result == 0:
+            if self.show_register() == QDialog.Rejected:
+                return False
+        if self.show_login() == QDialog.Accepted:
+            print('Ready to return True!')
+            return True
+        else:
+            return False
+
+
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    mainwindow = MainWindow()
-    mainwindow.show()
+    controller = Controller()
+    if controller.openLoginSurface():
+        print('Enter MainWindow()!')
+        Mymainwindow = MainWindow()
+        Mymainwindow.show()
+    else:
+        sys.exit(0)
     sys.exit(app.exec_())
