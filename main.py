@@ -21,7 +21,7 @@ from myDesign_win.videoReplay import Ui_Form
 from myDesign_win.newUser import Ui_Dialog as Ui_newUserDialog
 from myDesign_win.loginSurface import Ui_Dialog
 from utils.PageTable import PageTable
-from utils.PageButton import PageButton
+from utils.PageButton import PageButton, UserDelButton
 from utils.encryption import func_encrypt_config, func_decrypt_config
 from utils.lineEditValidator import LineEditValidator
 
@@ -30,7 +30,9 @@ from datetime import datetime
 
 QtCore.QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
 key = b'mysecretpassword'  # 密钥（需要确保安全）
-filepath = 'data/userInfo/users.dat'
+
+
+# filepath = 'data/userInfo/users.dat'
 
 
 class DetThread(QThread):
@@ -276,7 +278,7 @@ class DetThread(QThread):
 
     def save_if_threshold_exceeded(self, start_count, end_count, start_time, end_time, cls):
         # 如果计数器超过阈值
-        print('Enter save_if_threshold_exceeded!')
+        # print('Enter save_if_threshold_exceeded!')
         if start_count > 5 > end_count:
             start_time_str = start_time.strftime('%Y-%m-%d_%H-%M-%S')
             end_time_str = end_time.strftime('%Y-%m-%d_%H-%M-%S')
@@ -293,7 +295,7 @@ class DetThread(QThread):
         # 格式化开始时间和结束时间为字符串
         start_time_str = start_time.strftime('%Y-%m-%d_%H-%M-%S')
         end_time_str = end_time.strftime('%Y-%m-%d_%H-%M-%S')
-        print('Ready to write {}!'.format(filepath))
+        # print('Ready to write {}!'.format(filepath))
         # 将时间戳写入文本文件
         with open(filepath, 'w') as file:
             file.write('{} {} {}'.format(cls, start_time_str, end_time_str))
@@ -333,6 +335,8 @@ class MainWindow(QMainWindow):
     videoFileSavePath = 'D:/大三下/软工课设/HomeSurface'
     SearchDatalist = [[]]
 
+    UserDatalist = [[]]
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.ui.setupUi(self)
@@ -342,6 +346,7 @@ class MainWindow(QMainWindow):
         self._initVideoReplay()
         self._initDatabase()
         self._initVideoSearch()
+        self._initUserPage()
 
     def testReplay(self, infoGroup):
         seperator = ' '
@@ -359,13 +364,16 @@ class MainWindow(QMainWindow):
         self.close()
 
     def gotoBlock(self, index: int):
-        if index != 1:
+        if index != 1 and index != 4 and index != 3:
+            self.ui.stackedWidget.setCurrentIndex(index)
+        elif index == 1:
+            self.BtnLoadDataClick()
+            self.ui.stackedWidget.setCurrentIndex(index)
+        elif index == 3:
+            self.BtnQureyClick()
             self.ui.stackedWidget.setCurrentIndex(index)
         else:
-            c = self.conn.cursor()
-            c.execute("SELECT COUNT(*) FROM alarmRecord")
-            self.totalLinesCnt = c.fetchone()[0]
-            self.BtnLoadDataClick()
+            self.updateUserPage()
             self.ui.stackedWidget.setCurrentIndex(index)
 
     def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:
@@ -449,6 +457,9 @@ class MainWindow(QMainWindow):
         self.pageTable.SetData(self.Datalist)
 
     def BtnLoadDataClick(self):
+        c = self.conn.cursor()
+        c.execute("SELECT COUNT(*) FROM alarmRecord")
+        self.totalLinesCnt = c.fetchone()[0]
         self.pageTable.pageWidget.setMaxPage(math.ceil(self.totalLinesCnt / self.alarmRowCount))
         # print(type(self.pageTable.pageWidget))
         self.pageTable.pageWidget.setCurrentPage(1, True)
@@ -462,7 +473,7 @@ class MainWindow(QMainWindow):
     # VideoReplay
     def volumnChange(self, position):
         volume = round(position / self.ui.sld_audio.maximum() * 100)
-        print("volume %f" % volume)
+        # print("volume %f" % volume)
         self.player.setVolume(volume)
         self.ui.lab_audio.setText("volume:" + str(volume) + "%")
 
@@ -544,13 +555,7 @@ class MainWindow(QMainWindow):
                     alarmType INTEGER NOT NULL, 
                     camNo INTEGER NOT NULL)
         ''')
-        # # 还要再创建一个用户表
-        # c.execute('''CREATE TABLE IF NOT EXISTS userInfo
-        #             (userID TEXT PRIMARY KEY NOT NULL,
-        #             userCode TEXT NOT NULL)
-        # ''')
         self.conn.commit()
-        # self.conn.close()
 
     def _initPageTable(self):
         # PageTable
@@ -603,15 +608,15 @@ class MainWindow(QMainWindow):
             tempList = [str(i + 1)] + [self.mp4Files[i]] + self.timestampGroup[i] + [str(self.cameraNums[i])] + \
                        [str(self.fileSizes[i])] + [self.searchPageButtons[i % self.searchRowCnt]]
             self.SearchDatalist.append(tempList)
-        print(self.SearchDatalist)
+        # print(self.SearchDatalist)
         self.searchTable.SetData(self.SearchDatalist)
 
     def BtnQureyClick(self):
         # 获取QDateEdit里面的内容, 然后根据它去查找视频回放 (定义好文件夹和视频的保存路径以及文件名称
         selected_date = self.ui.dateEdit.date()
-        print("Selected Date: ", selected_date.toString("yyyy-MM-dd"))
+        # print("Selected Date: ", selected_date.toString("yyyy-MM-dd"))
         folderName = selected_date.toString("yyyyMMdd")
-        print(folderName)
+        # print(folderName)
         if os.path.exists(os.path.join(self.videoFileSavePath + '/detect_results', folderName)):
             self.mp4Files, self.fileSizes = self.get_mp4_files(
                 os.path.join(self.videoFileSavePath + '/detect_results', folderName))
@@ -643,7 +648,7 @@ class MainWindow(QMainWindow):
             file_path = os.path.join(directory, file)
             # 判断是否为文件以及是否为MP4文件
             if os.path.isfile(file_path) and file.lower().endswith('.mp4') and re.match(pattern, file):
-                print(os.path.basename(file_path))
+                # print(os.path.basename(file_path))
                 # 提取文件名部分，并添加到列表中
                 mp4_files.append(os.path.basename(file_path))
                 fileSizeBytes = os.path.getsize(file_path)
@@ -693,6 +698,77 @@ class MainWindow(QMainWindow):
     def updateCurInsertID(self, id: int):
         self.curInsertID = id
 
+    def _initUserPage(self):
+        self.ui.userAddBtn.clicked.connect(self.addUser)
+        self.userpageRowCnt = 8
+        header = ["序号", "用户名", "密码", "操作"]
+        self.userTable = PageTable(header, self.userpageRowCnt)
+        self.ui.userLayout.addLayout(self.userTable)
+        self.userTable.pageWidget.send_curPage.connect(lambda x: self.userPageChange(x))
+        self.userPageButtons = []
+        for i in range(self.userpageRowCnt):
+            button = UserDelButton()
+            button.btnNo = i + 1
+            button.setText('删 除')
+            button.send_myNo.connect(lambda x: self.deleteUser(x))
+            self.userPageButtons.append(button)
+
+    def userPageChange(self, currenPage: int):
+        self.LoadUserPage(currenPage)
+
+    def LoadUserPage(self, currentPage: int):
+        self.UserDatalist.clear()
+        c = self.conn.cursor()
+        c.execute("SELECT userID, userCode FROM userInfo LIMIT ? OFFSET ?",
+                  (self.userpageRowCnt, self.userpageRowCnt * (currentPage - 1)))
+        rows = c.fetchall()
+        j = 0
+        for i, row in enumerate(rows, self.userpageRowCnt * (currentPage - 1) + 1):
+            button = self.userPageButtons[j]
+            tmpList = [i]
+            button.userID = row[0]
+            tmpList.append(button.userID)
+            code = func_decrypt_config(key, row[1])
+            hideCode = '*' * len(code)
+            tmpList.append(hideCode)
+            tmpList.append(button)
+            self.UserDatalist.append(tmpList)
+            j += 1
+        print(self.UserDatalist)
+        self.userTable.SetData(self.UserDatalist)
+
+    def updateUserPage(self):
+        c = self.conn.cursor()
+        c.execute("SELECT COUNT(*) FROM userInfo")
+        self.totalUserCnt = c.fetchone()[0]
+        self.userTable.pageWidget.setMaxPage(math.ceil(self.totalUserCnt / self.userpageRowCnt))
+        self.userTable.pageWidget.setCurrentPage(1, True)
+        self.LoadUserPage(1)
+
+    def deleteUser(self, infoGroup):
+        if self.totalUserCnt == 1:
+            QMessageBox.information(self, '', '无法删除唯一的用户!')
+        else:
+            msgBox = QMessageBox()
+            msgBox.setText('确定要删除该用户吗?')
+            msgBox.addButton(QMessageBox.Yes)
+            msgBox.addButton(QMessageBox.No)
+            response = msgBox.exec_()
+            if response == QMessageBox.Yes:
+                # print('userIDtodel:' + infoGroup[0])
+                userID = infoGroup[0]
+                c = self.conn.cursor()
+                # print('encryptedID: ' + userID)
+                c.execute('DELETE FROM userInfo WHERE userID = ?', (userID,))
+                self.conn.commit()
+                self.updateUserPage()
+
+    def addUser(self):
+        self.regisDialog = registerDialog(firstIn=False)
+        self.regisDialog.setFixedSize(378, 440)
+        self.regisDialog.exec_()
+        self.updateUserPage()
+
     # 628×471
     @staticmethod
     def show_video(img_src, label):
@@ -738,7 +814,7 @@ class registerDialog(QDialog):
         fixupString=''
     )
 
-    def __init__(self, parent=None):
+    def __init__(self, firstIn=True, parent=None):
         super().__init__(parent)
         self.ui.setupUi(self)
         self.setWindowFlag(Qt.FramelessWindowHint)
@@ -758,7 +834,9 @@ class registerDialog(QDialog):
         self.ui.registerButton.clicked.connect(self.register)
         self.databaseName = 'myDB.db'
         self.conn = sql.connect(self.databaseName, isolation_level=None, uri=True)  # 启用WAL模式
-        QMessageBox.information(self, '', '首次登录，请先创建用户!')
+        self.firstIn = firstIn
+        if firstIn:
+            QMessageBox.information(self, '', '首次登录，请先创建用户!')
 
     def register(self):
         userInput_Name = self.ui.userNameEdit.text()
@@ -775,28 +853,19 @@ class registerDialog(QDialog):
             self.ui.passwordEdit.setFocus()
             return
         c = self.conn.cursor()
-        userID = func_encrypt_config(key, userInput_Name)
+        # userID = func_encrypt_config(key, userInput_Name)
         userCode = func_encrypt_config(key, userInput_Password)
-        c.execute('INSERT INTO userInfo (userID, userCode) VALUES (?, ?)', (userID, userCode))
-        userFile = open(filepath, 'wb')
-        userInfo = userInput_Name + '\n' + userInput_Password
-        userInfo = func_encrypt_config(key, userInfo)
-        userFile.write(userInfo.encode('utf-8'))
-        userFile.flush()
-        userFile.close()
-        # 注册成功
-        msgBox = QMessageBox()
-        msgBox.setText('注册成功!\n即将转到登陆界面...')
-        timer = QTimer()
-        timer.timeout.connect(msgBox.close)
-        timer.start(3000)
-        msgBox.exec_()
+        c.execute('INSERT INTO userInfo (userID, userCode) VALUES (?, ?)', (userInput_Name, userCode))
+        if self.firstIn:
+            # 注册成功
+            msgBox = QMessageBox()
+            msgBox.setText('注册成功!\n即将转到登陆界面...')
+            timer = QTimer()
+            timer.timeout.connect(msgBox.close)
+            timer.start(3000)
+            msgBox.exec_()
         self.conn.close()
         self.accept()
-
-    # def closeAct(self):
-    #     self.abnormalExit = True
-    #     self.close()
 
 
 class loginDialog(QDialog):
@@ -816,19 +885,17 @@ class loginDialog(QDialog):
         self.conn = sql.connect(self.databaseName, isolation_level=None, uri=True)
 
     def check(self):
+        # print('Enter Check!')
         c = self.conn.cursor()
         c.execute('SELECT * FROM userInfo')
         rows = c.fetchall()
         userInfo = ''
         for row in rows:
             userID, userCode = row
-            userInfo = userInfo + func_decrypt_config(key, userID) + '\n' + func_decrypt_config(key, userCode)
+            userInfo = userInfo + userID + '\n' + func_decrypt_config(key, userCode) + '\n'
+        # print('Get userInfo:' + userInfo)
         userInput_Name = self.ui.userNameEdit.text()
         userInput_Password = self.ui.passwordEdit.text()
-        # userFile = open(filepath, 'rb')
-        # userInfo = userFile.read().decode('utf-8')
-        # userFile.close()
-        # userInfo = func_decrypt_config(key, userInfo)
         if self.check_credentials(userInfo, userInput_Name, userInput_Password) == 1:
             print('登录成功!')
             # QMessageBox.information(self, 'Congratulation!', '登陆成功!')
@@ -863,26 +930,32 @@ class loginDialog(QDialog):
     def check_credentials(self, userinfo, userinput_name, userinput_password):
         lines = userinfo.splitlines()
         userNum = [x for x in range(0, len(lines) - 1) if x % 2 == 0]
+        # print('userNum:')
+        # print(userNum)
         if len(lines) % 2 != 0:
             raise SystemExit('UserFileError!')
+        correctCnt = 0
+        codeWrongCnt = 0
+        idWrongCnt = 0
         for i in userNum:
             if lines[i] == userinput_name and lines[i + 1] == userinput_password:  # 匹配成功
-                return 1
+                correctCnt += 1
             elif lines[i] == userinput_name and lines[i + 1] != userinput_password:  # 密码错误
-                return 2
+                codeWrongCnt += 1
             else:  # 账号错误
-                return 3
+                idWrongCnt += 1
+        if correctCnt != 0:
+            return 1
+        elif codeWrongCnt != 0:
+            return 2
+        elif idWrongCnt != 0:
+            return 3
         return 0
 
 
 class Controller:
 
     def __init__(self):
-        if not os.path.exists('data'):
-            os.mkdir('data')
-        if not os.path.exists('data/userInfo'):
-            os.mkdir('data/userInfo')
-        filepath = 'data/userInfo/users.dat'
         self.databaseName = 'myDB.db'
         self.conn = sql.connect(self.databaseName, isolation_level=None, uri=True)
         c = self.conn.cursor()
@@ -907,7 +980,7 @@ class Controller:
         c.execute('SELECT COUNT(*) FROM userInfo')
         result = c.fetchone()[0]
         self.conn.close()
-        # 如果没有用户账户文件，打开注册界面
+        # 如果没有用户账户信息，打开注册界面
         if result == 0:
             if self.show_register() == QDialog.Rejected:
                 return False
@@ -922,7 +995,7 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     controller = Controller()
     if controller.openLoginSurface():
-        print('Enter MainWindow()!')
+        # print('Enter MainWindow()!')
         Mymainwindow = MainWindow()
         Mymainwindow.show()
     else:

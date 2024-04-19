@@ -65,6 +65,8 @@ class PageTable(QVBoxLayout):
                 widget = self.tableWidget.cellWidget(i, self.headerLen - 1)
                 if widget is not None:
                     widget.show()
+        if len(DataList[0]) == 0:
+            return
         for i in range(len(DataList)):
             Item = DataList[i]
             for j in range(len(Item) - 1):
