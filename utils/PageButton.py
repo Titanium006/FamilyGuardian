@@ -16,7 +16,7 @@ class PageButton(QPushButton):
 
     def mousePressEvent(self, event: QtGui.QMouseEvent) -> None:
         # print('Enter PageButton Press!')
-        infoGroup = [self.startTime, self.endTime, self.camNo, self.btnNo]
+        infoGroup = [self.startTime, self.endTime, self.camNo, self.fileName, self.btnNo]
         self.send_myNo.emit(infoGroup)
         super().mousePressEvent(event)
 

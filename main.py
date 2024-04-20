@@ -28,11 +28,9 @@ from utils.lineEditValidator import LineEditValidator
 from ultralytics import YOLO
 from datetime import datetime
 
+# 设置这个可以确保屏幕分辨率不影响界面显示
 QtCore.QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
 key = b'mysecretpassword'  # 密钥（需要确保安全）
-
-
-# filepath = 'data/userInfo/users.dat'
 
 
 class DetThread(QThread):
@@ -89,8 +87,8 @@ class DetThread(QThread):
         ori_fps = int(self.cap.get(cv2.CAP_PROP_FPS))
         if ori_fps == 0:
             ori_fps = 25
-        self.out = cv2.VideoWriter(os.path.join(self.save_folder, self.video_filename), cv2.VideoWriter_fourcc(*'XVID'),
-                                   3,
+        self.out = cv2.VideoWriter(os.path.join(self.save_folder, self.video_filename), cv2.VideoWriter_fourcc(*'mp4v'),
+                                   5,
                                    (frame_width, frame_height))
 
         # 遍历视频帧
@@ -333,6 +331,7 @@ class MainWindow(QMainWindow):
     ##############
     searchRowCnt = 10
     videoFileSavePath = 'D:/大三下/软工课设/HomeSurface'
+    videoFileSaveFolder = 'detect_results'
     SearchDatalist = [[]]
 
     UserDatalist = [[]]
@@ -348,14 +347,22 @@ class MainWindow(QMainWindow):
         self._initVideoSearch()
         self._initUserPage()
 
-    def testReplay(self, infoGroup):
-        seperator = ' '
-        infoGroup[-1] = str(infoGroup[-1])
-        infoGroup[-2] = str(infoGroup[-2])
-        # print(infoGroup)
-        result = seperator.join(infoGroup)
-        # print(result)
-        QMessageBox.information(self, '', result)  # 注意是.information 不是构造函数
+    def videoReplay(self, infoGroup):
+        # seperator = ' '
+        # infoGroup[-1] = str(infoGroup[-1])
+        # infoGroup[-2] = str(infoGroup[-2])
+        # # print(infoGroup)
+        # result = seperator.join(infoGroup)
+        # # print(result)
+        # QMessageBox.information(self, '', result)  # 注意是.information 不是构造函数
+        if len(infoGroup[-2]) != 0:
+            absolute_path = os.path.join(self.videoFileSavePath, self.videoFileSaveFolder, self.folderName, infoGroup[-2])
+            self.rtPageIndex = 3
+            if not self.openVideoFile(absolute_path):
+                self.rtPageIndex = 0
+                QMessageBox.information(self, '', '回放文件已被清理!')
+        else:
+            pass
 
     def myClose(self):
         self.detThread.quit()
@@ -364,17 +371,14 @@ class MainWindow(QMainWindow):
         self.close()
 
     def gotoBlock(self, index: int):
-        if index != 1 and index != 4 and index != 3:
-            self.ui.stackedWidget.setCurrentIndex(index)
-        elif index == 1:
+        # 设置跳转之后的初始刷新, 如果没有就会导致页面显示混乱
+        if index == 1:
             self.BtnLoadDataClick()
-            self.ui.stackedWidget.setCurrentIndex(index)
         elif index == 3:
             self.BtnQureyClick()
-            self.ui.stackedWidget.setCurrentIndex(index)
         else:
             self.updateUserPage()
-            self.ui.stackedWidget.setCurrentIndex(index)
+        self.ui.stackedWidget.setCurrentIndex(index)
 
     def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:
         # print('Enter MouseMoveEvent!')
@@ -505,11 +509,15 @@ class MainWindow(QMainWindow):
             self.ui.sld_video.setValue(round((position / self.videoLength) * 100))
             self.ui.lab_video.setText("%.2f%%" % ((position / self.videoLength) * 100))
 
-    def openVideoFile(self):
-        # video_url = QUrl(self.videoPath)
-        # self.player.setMedia(QMediaContent(video_url))
-        self.player.setMedia(QMediaContent(QFileDialog.getOpenFileUrl()[0]))  # 选取视频文件
-        self.player.play()
+    def openVideoFile(self, absolutePath: str) -> bool:
+        if os.path.isfile(absolutePath):
+            self.gotoBlock(2)
+            mediaContent = QMediaContent(QUrl.fromLocalFile(absolutePath))
+            self.player.setMedia(mediaContent)  # 选取视频文件
+            self.player.play()
+            return True
+        else:
+            return False
 
     def playVideo(self):
         self.player.play()
@@ -569,7 +577,7 @@ class MainWindow(QMainWindow):
             button = PageButton()
             button.btnNo = i + 1
             button.setText('回 放')
-            button.send_myNo.connect(lambda x: self.testReplay(x))
+            button.send_myNo.connect(lambda x: self.videoReplay(x))
             self.pageButtons.append(button)
 
     def _initVideoSearch(self):
@@ -584,7 +592,7 @@ class MainWindow(QMainWindow):
             button = PageButton()
             button.btnNo = i + 1
             button.setText('回 放')
-            button.send_myNo.connect(lambda x: self.testReplay(x))
+            button.send_myNo.connect(lambda x: self.videoReplay(x))
             self.searchPageButtons.append(button)
 
     def searchPageChange(self, currentPage: int):
@@ -605,6 +613,7 @@ class MainWindow(QMainWindow):
             if button.btnNo == 0:
                 button.btnNo = self.searchRowCnt
             button.fileName = self.mp4Files[i]
+            # print('button.fileName is ' + button.fileName)
             tempList = [str(i + 1)] + [self.mp4Files[i]] + self.timestampGroup[i] + [str(self.cameraNums[i])] + \
                        [str(self.fileSizes[i])] + [self.searchPageButtons[i % self.searchRowCnt]]
             self.SearchDatalist.append(tempList)
@@ -615,11 +624,11 @@ class MainWindow(QMainWindow):
         # 获取QDateEdit里面的内容, 然后根据它去查找视频回放 (定义好文件夹和视频的保存路径以及文件名称
         selected_date = self.ui.dateEdit.date()
         # print("Selected Date: ", selected_date.toString("yyyy-MM-dd"))
-        folderName = selected_date.toString("yyyyMMdd")
+        self.folderName = selected_date.toString("yyyyMMdd")
         # print(folderName)
-        if os.path.exists(os.path.join(self.videoFileSavePath + '/detect_results', folderName)):
+        if os.path.exists(os.path.join(self.videoFileSavePath + '/detect_results', self.folderName)):
             self.mp4Files, self.fileSizes = self.get_mp4_files(
-                os.path.join(self.videoFileSavePath + '/detect_results', folderName))
+                os.path.join(self.videoFileSavePath + '/detect_results', self.folderName))
             self.timestampGroup = []
             self.cameraNums = []
             for mp4file in self.mp4Files:
@@ -684,7 +693,6 @@ class MainWindow(QMainWindow):
         self.sld_video_pressed = False
         self.player = QMediaPlayer()
         self.player.setVideoOutput(self.ui.wgt_video)
-        self.ui.btn_open.clicked.connect(self.openVideoFile)
         self.ui.btn_play.clicked.connect(self.playVideo)
         self.ui.btn_stop.clicked.connect(self.pauseVideo)
         self.player.positionChanged.connect(self.changeSlider)
@@ -694,6 +702,12 @@ class MainWindow(QMainWindow):
         self.ui.sld_video.sliderMoved.connect(self.moveSlider)
         self.ui.sld_video.ClickedValue.connect(self.clickedSlider)
         self.ui.sld_audio.valueChanged.connect(self.volumnChange)
+        self.rtPageIndex = 0    # 返回的页面下标
+        self.ui.returnBtn.clicked.connect(self.rtBlock)
+
+    def rtBlock(self):
+        self.player.stop()
+        self.gotoBlock(self.rtPageIndex)
 
     def updateCurInsertID(self, id: int):
         self.curInsertID = id
@@ -734,7 +748,7 @@ class MainWindow(QMainWindow):
             tmpList.append(button)
             self.UserDatalist.append(tmpList)
             j += 1
-        print(self.UserDatalist)
+        # print(self.UserDatalist)
         self.userTable.SetData(self.UserDatalist)
 
     def updateUserPage(self):
