@@ -45,6 +45,9 @@ class DetThread(QThread):
         self.model = YOLO('./pt/best.pt')  # 这个先不改, 看看后面模型放哪先
         self.save_folder = videoSavePath + '/detect_results/'
         os.makedirs(self.save_folder, exist_ok=True)
+        self.frameCnt = 0
+        self.frame_width = 400
+        self.frame_height = 300
         self._initSaveTime()
 
     def _initSaveTime(self):
@@ -80,17 +83,14 @@ class DetThread(QThread):
         frame_count = 0
 
         # 视频帧宽高
-        frame_width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        frame_height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        self.frame_width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        self.frame_height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
         # 视频帧写入对象
-        ori_fps = int(self.cap.get(cv2.CAP_PROP_FPS))
-        if ori_fps == 0:
-            ori_fps = 25
         self.out = cv2.VideoWriter(os.path.join(self.save_folder, self.video_filename), cv2.VideoWriter_fourcc(*'mp4v'),
                                    5,
-                                   (frame_width, frame_height))
-
+                                   (self.frame_width, self.frame_height))
+        self.startTime = time.time()
         # 遍历视频帧
         while self.cap.isOpened():
             # 从视频中读取一帧
@@ -169,6 +169,7 @@ class DetThread(QThread):
 
                 # # 保存视频帧
                 # cv2.imwrite(os.path.join(self.save_folder, f'{frame_count}.jpg'), annotated_frame)
+                self.frameCnt += 1
 
                 # 写入视频
                 self.out.write(annotated_frame)
@@ -301,14 +302,32 @@ class DetThread(QThread):
     def quit(self) -> None:
         self.cap.release()
         self.out.release()
+        endTime = time.time()
+        duration = endTime - self.startTime
+        # averageFps = math.floor(self.frameCnt / duration)
+        endTimeStr = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())
         time.sleep(2)
         filepath = os.path.join(self.save_folder, self.video_filename)
         if os.path.isfile(filepath):
             basename, extension = os.path.splitext(self.video_filename)
-            endTimeStr = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())
+            # endTimeStr = time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())
             new_name = f"{basename}_{endTimeStr}_{self.source}{extension}"
             new_file_path = os.path.join(self.save_folder, new_name)
-            os.rename(filepath, new_file_path)
+            cap = cv2.VideoCapture(filepath)
+            totalFrames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            averageFps = math.floor(totalFrames / duration)
+            out = cv2.VideoWriter(new_file_path, cv2.VideoWriter_fourcc(*'mp4v'), averageFps,
+                                  (self.frame_width, self.frame_height))
+            while cap.isOpened():
+                ret, frame = cap.read()
+                if ret:
+                    out.write(frame)
+                else:
+                    break
+            cap.release()
+            out.release()
+            os.remove(filepath)
+            # os.rename(filepath, new_file_path)
         super().quit()
 
 
@@ -346,23 +365,54 @@ class MainWindow(QMainWindow):
         self._initDatabase()
         self._initVideoSearch()
         self._initUserPage()
+        self.ui.StrangerButton.clicked.connect(lambda x: self.test(x))
+
+    def test(self, checked):
+        if checked:
+            print("Checked")
+        else:
+            print("UnChecked")
 
     def videoReplay(self, infoGroup):
-        # seperator = ' '
-        # infoGroup[-1] = str(infoGroup[-1])
-        # infoGroup[-2] = str(infoGroup[-2])
-        # # print(infoGroup)
-        # result = seperator.join(infoGroup)
-        # # print(result)
-        # QMessageBox.information(self, '', result)  # 注意是.information 不是构造函数
         if len(infoGroup[-2]) != 0:
-            absolute_path = os.path.join(self.videoFileSavePath, self.videoFileSaveFolder, self.folderName, infoGroup[-2])
+            absolute_path = os.path.join(self.videoFileSavePath, self.videoFileSaveFolder, self.folderName,
+                                         infoGroup[-2])
             self.rtPageIndex = 3
             if not self.openVideoFile(absolute_path):
                 self.rtPageIndex = 0
-                QMessageBox.information(self, '', '回放文件已被清理!')
+                QMessageBox.information(self, '', '回放文件不存在或已被清理!')
         else:
-            pass
+            # infoGroup = [self.startTime, self.endTime, self.camNo, self.fileName, self.btnNo]  格式: 2024-10-30 09:53:00
+            dateFolder, alarmStartTime = str(infoGroup[0]).split(' ')
+            dateFolder = str(dateFolder).split('-')
+            dateFolder = dateFolder[0] + dateFolder[1] + dateFolder[2]
+            alarmEndTime = str(infoGroup[1]).split(' ')[1]
+            alarmStartTime = datetime.strptime(alarmStartTime, "%H:%M:%S")
+            alarmEndTime = datetime.strptime(alarmEndTime, "%H:%M:%S")
+            data = os.path.join(self.videoFileSavePath, self.videoFileSaveFolder, dateFolder)
+            print('Path is ' + data)
+            if os.path.exists(data):
+                mp4Files, _ = self.get_mp4_files(data)
+                findOne = False
+                for file in mp4Files:
+                    basename, extension = os.path.splitext(file)
+                    myTimeList = basename.split('_')
+                    videoStartTime = datetime.strptime(myTimeList[1], "%H-%M-%S")
+                    videoEndTime = datetime.strptime(myTimeList[3], "%H-%M-%S")
+                    if videoStartTime.time() <= alarmStartTime.time() <= alarmEndTime.time() <= videoEndTime.time():
+                        findOne = True
+                        jumpSec = int((alarmStartTime - videoStartTime).total_seconds())
+                        self.rtPageIndex = 1
+                        if not self.openVideoFile(os.path.join(data, file), jumpSec):
+                            self.rtPageIndex = 0
+                            QMessageBox.information(self, '', '回放文件不存在或已被清理!')
+                        break
+                if not findOne:
+                    self.rtPageIndex = 0
+                    QMessageBox.information(self, '', '回放文件不存在或已被清理!')
+            else:
+                self.rtPageIndex = 0
+                QMessageBox.information(self, '', '回放文件不存在或已被清理!')
 
     def myClose(self):
         self.detThread.quit()
@@ -509,11 +559,13 @@ class MainWindow(QMainWindow):
             self.ui.sld_video.setValue(round((position / self.videoLength) * 100))
             self.ui.lab_video.setText("%.2f%%" % ((position / self.videoLength) * 100))
 
-    def openVideoFile(self, absolutePath: str) -> bool:
+    def openVideoFile(self, absolutePath: str, jumpSec=0) -> bool:
         if os.path.isfile(absolutePath):
             self.gotoBlock(2)
             mediaContent = QMediaContent(QUrl.fromLocalFile(absolutePath))
             self.player.setMedia(mediaContent)  # 选取视频文件
+            if jumpSec != 0:
+                self.player.setPosition(int(jumpSec * 1000))
             self.player.play()
             return True
         else:
@@ -626,9 +678,9 @@ class MainWindow(QMainWindow):
         # print("Selected Date: ", selected_date.toString("yyyy-MM-dd"))
         self.folderName = selected_date.toString("yyyyMMdd")
         # print(folderName)
-        if os.path.exists(os.path.join(self.videoFileSavePath + '/detect_results', self.folderName)):
+        if os.path.exists(os.path.join(self.videoFileSavePath, self.videoFileSaveFolder, self.folderName)):
             self.mp4Files, self.fileSizes = self.get_mp4_files(
-                os.path.join(self.videoFileSavePath + '/detect_results', self.folderName))
+                os.path.join(self.videoFileSavePath, self.videoFileSaveFolder, self.folderName))
             self.timestampGroup = []
             self.cameraNums = []
             for mp4file in self.mp4Files:
@@ -702,7 +754,7 @@ class MainWindow(QMainWindow):
         self.ui.sld_video.sliderMoved.connect(self.moveSlider)
         self.ui.sld_video.ClickedValue.connect(self.clickedSlider)
         self.ui.sld_audio.valueChanged.connect(self.volumnChange)
-        self.rtPageIndex = 0    # 返回的页面下标
+        self.rtPageIndex = 0  # 返回的页面下标
         self.ui.returnBtn.clicked.connect(self.rtBlock)
 
     def rtBlock(self):
