@@ -14,141 +14,299 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_Dialog(object):
     def setupUi(self, Dialog):
         Dialog.setObjectName("Dialog")
-        Dialog.resize(446, 440)
+        Dialog.resize(529, 588)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(Dialog.sizePolicy().hasHeightForWidth())
         Dialog.setSizePolicy(sizePolicy)
-        self.verticalLayout = QtWidgets.QVBoxLayout(Dialog)
-        self.verticalLayout.setContentsMargins(-1, 0, -1, -1)
+        Dialog.setMinimumSize(QtCore.QSize(0, 0))
+        Dialog.setStyleSheet("*{\n"
+"    background-color: rgb(255, 255, 255);\n"
+"}\n"
+"\n"
+"QFrame#frame{\n"
+"    border-radius:35px;\n"
+"    border-image: url(:/login/icon/loginbackground.jpg);\n"
+"}\n"
+"\n"
+"#frame_3{\n"
+"    border-radius:35px;\n"
+"    background-color: rgba(206, 206, 206, 70);\n"
+"}\n"
+"\n"
+"QGroupBox#groupBox_2{\n"
+"    border: none;\n"
+"    background: transparent;\n"
+"}\n"
+"\n"
+"QLabel#appNameLabel{\n"
+"    background: transparent;\n"
+"    color: rgb(232, 233, 234);\n"
+"    font: 14pt \"hooge 05_54\";\n"
+"}\n"
+"\n"
+"QLabel#userNameLabel{\n"
+"    background: transparent;\n"
+"    font: 14pt \"幼圆\";\n"
+"    color: rgb(255, 255, 255);\n"
+"}\n"
+"\n"
+"#passwordLabel{\n"
+"    background: transparent;\n"
+"    font: 14pt \"幼圆\";\n"
+"    color: rgb(255, 255, 255);\n"
+"}\n"
+"\n"
+"#passwordConfirmLabel{\n"
+"    background: transparent;\n"
+"    font: 14pt \"幼圆\";\n"
+"    color: rgb(255, 255, 255);\n"
+"}\n"
+"\n"
+"QPushButton#regisMiniButton{\n"
+"    border-radius:10px;\n"
+"    image: url(:/login/icon/minus.png);\n"
+"    background: transparent;\n"
+"}\n"
+"\n"
+"#regisMiniButton:hover{\n"
+"    background-color: rgba(94, 99, 102, 150);\n"
+"}\n"
+"\n"
+"#regisMiniButton:pressed{\n"
+"    background-color: rgba(69, 73, 75, 220);\n"
+"}\n"
+"\n"
+"#regisCloseButton{\n"
+"    border-radius:10px;\n"
+"    image: url(:/login/icon/close.png);\n"
+"    background: transparent;\n"
+"}\n"
+"\n"
+"#regisCloseButton:hover{\n"
+"    background-color: rgba(94, 99, 102, 150);\n"
+"}\n"
+"\n"
+"#regisCloseButton:pressed{\n"
+"    background-color: rgba(69, 73, 75, 220);\n"
+"}\n"
+"\n"
+"#registerButton{\n"
+"    border-radius:10px;\n"
+"    background: transparent;\n"
+"    font: 14pt \"幼圆\";\n"
+"    color: rgba(255, 255, 255, 220);\n"
+"}\n"
+"\n"
+"#registerButton:hover{\n"
+"    background-color: rgba(62, 64, 71, 150);\n"
+"    font: 14pt \"幼圆\";\n"
+"    color: rgba(255, 255, 255, 220);\n"
+"}\n"
+"\n"
+"#registerButton:pressed{\n"
+"    background-color: rgba(77, 77, 77, 160);\n"
+"    font: 14pt \"幼圆\";\n"
+"    color: rgb(255, 255, 255);\n"
+"}\n"
+"\n"
+"QLineEdit{\n"
+"    background: transparent;\n"
+"    border: none;\n"
+"    border-bottom: 2px solid rgba(255, 255, 255, 200);\n"
+"    font: 12pt \"MS Reference Sans Serif\";\n"
+"    color: rgb(255, 255, 255);\n"
+"}\n"
+"\n"
+"")
+        self.verticalLayout_3 = QtWidgets.QVBoxLayout(Dialog)
+        self.verticalLayout_3.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayout_3.setSpacing(0)
+        self.verticalLayout_3.setObjectName("verticalLayout_3")
+        self.frame = QtWidgets.QFrame(Dialog)
+        self.frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.frame.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.frame.setObjectName("frame")
+        self.verticalLayout = QtWidgets.QVBoxLayout(self.frame)
+        self.verticalLayout.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayout.setSpacing(0)
         self.verticalLayout.setObjectName("verticalLayout")
-        self.groupBox = QtWidgets.QGroupBox(Dialog)
+        self.frame_3 = QtWidgets.QFrame(self.frame)
+        self.frame_3.setFrameShape(QtWidgets.QFrame.StyledPanel)
+        self.frame_3.setFrameShadow(QtWidgets.QFrame.Raised)
+        self.frame_3.setObjectName("frame_3")
+        self.verticalLayout_2 = QtWidgets.QVBoxLayout(self.frame_3)
+        self.verticalLayout_2.setContentsMargins(6, 7, 6, 1)
+        self.verticalLayout_2.setSpacing(6)
+        self.verticalLayout_2.setObjectName("verticalLayout_2")
+        spacerItem = QtWidgets.QSpacerItem(20, 5, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+        self.verticalLayout_2.addItem(spacerItem)
+        self.groupBox_2 = QtWidgets.QGroupBox(self.frame_3)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.groupBox.sizePolicy().hasHeightForWidth())
-        self.groupBox.setSizePolicy(sizePolicy)
-        self.groupBox.setMinimumSize(QtCore.QSize(360, 50))
-        self.groupBox.setTitle("")
-        self.groupBox.setObjectName("groupBox")
-        self.horizontalLayout_4 = QtWidgets.QHBoxLayout(self.groupBox)
+        sizePolicy.setHeightForWidth(self.groupBox_2.sizePolicy().hasHeightForWidth())
+        self.groupBox_2.setSizePolicy(sizePolicy)
+        self.groupBox_2.setMinimumSize(QtCore.QSize(360, 50))
+        self.groupBox_2.setObjectName("groupBox_2")
+        self.horizontalLayout_4 = QtWidgets.QHBoxLayout(self.groupBox_2)
         self.horizontalLayout_4.setContentsMargins(-1, 0, -1, -1)
         self.horizontalLayout_4.setObjectName("horizontalLayout_4")
-        self.appNameLabel = QtWidgets.QLabel(self.groupBox)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
+        self.appNameLabel = QtWidgets.QLabel(self.groupBox_2)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.appNameLabel.sizePolicy().hasHeightForWidth())
         self.appNameLabel.setSizePolicy(sizePolicy)
-        self.appNameLabel.setMinimumSize(QtCore.QSize(100, 0))
+        self.appNameLabel.setMinimumSize(QtCore.QSize(182, 0))
+        self.appNameLabel.setStyleSheet("")
         self.appNameLabel.setObjectName("appNameLabel")
         self.horizontalLayout_4.addWidget(self.appNameLabel)
-        spacerItem = QtWidgets.QSpacerItem(140, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
-        self.horizontalLayout_4.addItem(spacerItem)
-        self.regisMiniButton = QtWidgets.QPushButton(self.groupBox)
-        self.regisMiniButton.setMinimumSize(QtCore.QSize(50, 0))
+        spacerItem1 = QtWidgets.QSpacerItem(200, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        self.horizontalLayout_4.addItem(spacerItem1)
+        self.regisMiniButton = QtWidgets.QPushButton(self.groupBox_2)
+        self.regisMiniButton.setMinimumSize(QtCore.QSize(40, 40))
         self.regisMiniButton.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.regisMiniButton.setStyleSheet("")
+        self.regisMiniButton.setText("")
         self.regisMiniButton.setObjectName("regisMiniButton")
         self.horizontalLayout_4.addWidget(self.regisMiniButton)
-        self.regisCloseButton = QtWidgets.QPushButton(self.groupBox)
-        self.regisCloseButton.setMinimumSize(QtCore.QSize(50, 0))
+        spacerItem2 = QtWidgets.QSpacerItem(11, 20, QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Minimum)
+        self.horizontalLayout_4.addItem(spacerItem2)
+        self.regisCloseButton = QtWidgets.QPushButton(self.groupBox_2)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.regisCloseButton.sizePolicy().hasHeightForWidth())
+        self.regisCloseButton.setSizePolicy(sizePolicy)
+        self.regisCloseButton.setMinimumSize(QtCore.QSize(40, 40))
         self.regisCloseButton.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.regisCloseButton.setStyleSheet("")
+        self.regisCloseButton.setText("")
         self.regisCloseButton.setObjectName("regisCloseButton")
         self.horizontalLayout_4.addWidget(self.regisCloseButton)
-        self.verticalLayout.addWidget(self.groupBox)
-        spacerItem1 = QtWidgets.QSpacerItem(20, 15, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
-        self.verticalLayout.addItem(spacerItem1)
+        self.appNameLabel.raise_()
+        self.regisCloseButton.raise_()
+        self.regisMiniButton.raise_()
+        self.verticalLayout_2.addWidget(self.groupBox_2, 0, QtCore.Qt.AlignHCenter)
+        spacerItem3 = QtWidgets.QSpacerItem(20, 15, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+        self.verticalLayout_2.addItem(spacerItem3)
         self.horizontalLayout = QtWidgets.QHBoxLayout()
         self.horizontalLayout.setSizeConstraint(QtWidgets.QLayout.SetDefaultConstraint)
+        self.horizontalLayout.setContentsMargins(-1, -1, 8, -1)
+        self.horizontalLayout.setSpacing(16)
         self.horizontalLayout.setObjectName("horizontalLayout")
-        self.userNameLabel = QtWidgets.QLabel(Dialog)
+        self.userNameLabel = QtWidgets.QLabel(self.frame_3)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.userNameLabel.sizePolicy().hasHeightForWidth())
         self.userNameLabel.setSizePolicy(sizePolicy)
-        self.userNameLabel.setMinimumSize(QtCore.QSize(50, 50))
+        self.userNameLabel.setMinimumSize(QtCore.QSize(70, 50))
         self.userNameLabel.setMaximumSize(QtCore.QSize(50, 50))
-        self.userNameLabel.setAutoFillBackground(True)
+        font = QtGui.QFont()
+        font.setFamily("幼圆")
+        font.setPointSize(14)
+        font.setBold(False)
+        font.setItalic(False)
+        font.setWeight(50)
+        self.userNameLabel.setFont(font)
+        self.userNameLabel.setAutoFillBackground(False)
+        self.userNameLabel.setAlignment(QtCore.Qt.AlignCenter)
         self.userNameLabel.setObjectName("userNameLabel")
         self.horizontalLayout.addWidget(self.userNameLabel)
-        self.userNameEdit = QtWidgets.QLineEdit(Dialog)
+        self.userNameEdit = QtWidgets.QLineEdit(self.frame_3)
         self.userNameEdit.setMinimumSize(QtCore.QSize(0, 30))
+        self.userNameEdit.setPlaceholderText("")
         self.userNameEdit.setObjectName("userNameEdit")
         self.horizontalLayout.addWidget(self.userNameEdit)
-        self.verticalLayout.addLayout(self.horizontalLayout)
-        spacerItem2 = QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
-        self.verticalLayout.addItem(spacerItem2)
+        self.verticalLayout_2.addLayout(self.horizontalLayout)
+        spacerItem4 = QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+        self.verticalLayout_2.addItem(spacerItem4)
         self.horizontalLayout_2 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_2.setSizeConstraint(QtWidgets.QLayout.SetDefaultConstraint)
+        self.horizontalLayout_2.setContentsMargins(-1, -1, 8, -1)
+        self.horizontalLayout_2.setSpacing(16)
         self.horizontalLayout_2.setObjectName("horizontalLayout_2")
-        self.passwordLabel = QtWidgets.QLabel(Dialog)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        self.passwordLabel = QtWidgets.QLabel(self.frame_3)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.passwordLabel.sizePolicy().hasHeightForWidth())
         self.passwordLabel.setSizePolicy(sizePolicy)
-        self.passwordLabel.setMinimumSize(QtCore.QSize(50, 50))
+        self.passwordLabel.setMinimumSize(QtCore.QSize(70, 50))
         self.passwordLabel.setMaximumSize(QtCore.QSize(50, 50))
+        self.passwordLabel.setAlignment(QtCore.Qt.AlignCenter)
         self.passwordLabel.setObjectName("passwordLabel")
         self.horizontalLayout_2.addWidget(self.passwordLabel)
-        self.passwordEdit = QtWidgets.QLineEdit(Dialog)
+        self.passwordEdit = QtWidgets.QLineEdit(self.frame_3)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.passwordEdit.sizePolicy().hasHeightForWidth())
         self.passwordEdit.setSizePolicy(sizePolicy)
         self.passwordEdit.setMinimumSize(QtCore.QSize(0, 30))
+        self.passwordEdit.setEchoMode(QtWidgets.QLineEdit.Password)
         self.passwordEdit.setObjectName("passwordEdit")
         self.horizontalLayout_2.addWidget(self.passwordEdit)
-        self.verticalLayout.addLayout(self.horizontalLayout_2)
-        spacerItem3 = QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
-        self.verticalLayout.addItem(spacerItem3)
+        self.verticalLayout_2.addLayout(self.horizontalLayout_2)
+        spacerItem5 = QtWidgets.QSpacerItem(20, 20, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+        self.verticalLayout_2.addItem(spacerItem5)
         self.horizontalLayout_3 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_3.setSizeConstraint(QtWidgets.QLayout.SetDefaultConstraint)
+        self.horizontalLayout_3.setContentsMargins(-1, -1, 8, -1)
+        self.horizontalLayout_3.setSpacing(16)
         self.horizontalLayout_3.setObjectName("horizontalLayout_3")
-        self.passwordConfirmLabel = QtWidgets.QLabel(Dialog)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        self.passwordConfirmLabel = QtWidgets.QLabel(self.frame_3)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.passwordConfirmLabel.sizePolicy().hasHeightForWidth())
         self.passwordConfirmLabel.setSizePolicy(sizePolicy)
-        self.passwordConfirmLabel.setMinimumSize(QtCore.QSize(50, 50))
+        self.passwordConfirmLabel.setMinimumSize(QtCore.QSize(100, 50))
         self.passwordConfirmLabel.setMaximumSize(QtCore.QSize(50, 50))
         font = QtGui.QFont()
-        font.setPointSize(7)
+        font.setFamily("幼圆")
+        font.setPointSize(14)
+        font.setBold(False)
+        font.setItalic(False)
+        font.setWeight(50)
         self.passwordConfirmLabel.setFont(font)
         self.passwordConfirmLabel.setLineWidth(1)
         self.passwordConfirmLabel.setTextFormat(QtCore.Qt.AutoText)
+        self.passwordConfirmLabel.setAlignment(QtCore.Qt.AlignCenter)
         self.passwordConfirmLabel.setObjectName("passwordConfirmLabel")
         self.horizontalLayout_3.addWidget(self.passwordConfirmLabel)
-        self.passwordConfirmEdit = QtWidgets.QLineEdit(Dialog)
+        self.passwordConfirmEdit = QtWidgets.QLineEdit(self.frame_3)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.passwordConfirmEdit.sizePolicy().hasHeightForWidth())
         self.passwordConfirmEdit.setSizePolicy(sizePolicy)
         self.passwordConfirmEdit.setMinimumSize(QtCore.QSize(0, 30))
+        self.passwordConfirmEdit.setEchoMode(QtWidgets.QLineEdit.Password)
         self.passwordConfirmEdit.setObjectName("passwordConfirmEdit")
         self.horizontalLayout_3.addWidget(self.passwordConfirmEdit)
-        self.verticalLayout.addLayout(self.horizontalLayout_3)
-        spacerItem4 = QtWidgets.QSpacerItem(20, 32, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
-        self.verticalLayout.addItem(spacerItem4)
-        self.registerButton = QtWidgets.QPushButton(Dialog)
+        self.verticalLayout_2.addLayout(self.horizontalLayout_3)
+        spacerItem6 = QtWidgets.QSpacerItem(20, 32, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+        self.verticalLayout_2.addItem(spacerItem6)
+        self.registerButton = QtWidgets.QPushButton(self.frame_3)
         self.registerButton.setEnabled(True)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.registerButton.sizePolicy().hasHeightForWidth())
         self.registerButton.setSizePolicy(sizePolicy)
-        self.registerButton.setMinimumSize(QtCore.QSize(300, 40))
+        self.registerButton.setMinimumSize(QtCore.QSize(220, 40))
         self.registerButton.setMaximumSize(QtCore.QSize(300, 40))
         self.registerButton.setLayoutDirection(QtCore.Qt.LeftToRight)
         self.registerButton.setObjectName("registerButton")
-        self.verticalLayout.addWidget(self.registerButton, 0, QtCore.Qt.AlignHCenter)
-        spacerItem5 = QtWidgets.QSpacerItem(20, 29, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        self.verticalLayout.addItem(spacerItem5)
+        self.verticalLayout_2.addWidget(self.registerButton, 0, QtCore.Qt.AlignHCenter)
+        spacerItem7 = QtWidgets.QSpacerItem(20, 50, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+        self.verticalLayout_2.addItem(spacerItem7)
+        self.verticalLayout.addWidget(self.frame_3)
+        self.verticalLayout_3.addWidget(self.frame)
 
         self.retranslateUi(Dialog)
         QtCore.QMetaObject.connectSlotsByName(Dialog)
@@ -156,10 +314,9 @@ class Ui_Dialog(object):
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
         Dialog.setWindowTitle(_translate("Dialog", "Dialog"))
-        self.appNameLabel.setText(_translate("Dialog", "FamilyGuardian"))
-        self.regisMiniButton.setText(_translate("Dialog", "-"))
-        self.regisCloseButton.setText(_translate("Dialog", "x"))
-        self.userNameLabel.setText(_translate("Dialog", " 用户名:"))
-        self.passwordLabel.setText(_translate("Dialog", " 密码:"))
-        self.passwordConfirmLabel.setText(_translate("Dialog", " 确认密码:"))
+        self.appNameLabel.setText(_translate("Dialog", "FamilyGuard"))
+        self.userNameLabel.setText(_translate("Dialog", " 用户名"))
+        self.passwordLabel.setText(_translate("Dialog", " 密 码"))
+        self.passwordConfirmLabel.setText(_translate("Dialog", " 确认密码"))
         self.registerButton.setText(_translate("Dialog", "注 册"))
+import apprcc_rc

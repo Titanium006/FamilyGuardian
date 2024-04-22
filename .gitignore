@@ -5,3 +5,5 @@ detect_results
 *.mp4
 *.db
 data/
+*.qrc
+*.png

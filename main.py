@@ -35,19 +35,21 @@ key = b'mysecretpassword'  # 密钥（需要确保安全）
 
 class DetThread(QThread):
     send_img = pyqtSignal(np.ndarray)
-    send_curInsertID = pyqtSignal(int)
+    send_infoInsert = pyqtSignal(int)
 
-    def __init__(self, videoSavePath, threshold=1000):
+    def __init__(self, databaseName, threshold=1000):
         super(DetThread, self).__init__()
-        self.curInsertID = 211
         self.source = 0
         self.threshold = threshold  # 设置数据库存储报警信息条数的阈值, 超过这个阈值就开始删除老数据
         self.model = YOLO('./pt/best.pt')  # 这个先不改, 看看后面模型放哪先
-        self.save_folder = videoSavePath + '/detect_results/'
+        self.dataBaseName = databaseName
+        self.save_folder = 'detect_results'
         os.makedirs(self.save_folder, exist_ok=True)
         self.frameCnt = 0
         self.frame_width = 400
         self.frame_height = 300
+        self.checkingStranger = True        # 默认识别人物
+        self._initThreadDatabase()
         self._initSaveTime()
 
     def _initSaveTime(self):
@@ -57,6 +59,7 @@ class DetThread(QThread):
         print('Current save_folder is {}!'.format(self.save_folder))
         os.makedirs(self.save_folder, exist_ok=True)
         # 初始化各类别的计数器和开始时间
+        self.detThreshold = 2
         self.smoke_count = 0
         self.fire_count = 0
         self.person_count = 0
@@ -73,6 +76,13 @@ class DetThread(QThread):
         self.smoke_end_time = None
         self.fire_end_time = None
         self.person_end_time = None
+
+    def _initThreadDatabase(self):
+        self.conn = sql.connect(os.path.join(self.dataBaseName),
+                                isolation_level=None, uri=True, check_same_thread=False)
+        c = self.conn.cursor()
+        c.execute('SELECT COUNT(*) FROM testInsert')
+        self.curInsertID = c.fetchone()[0] + 1
 
     def run(self):
         self.cap = cv2.VideoCapture(self.source)
@@ -188,7 +198,7 @@ class DetThread(QThread):
         time_diff = (current_time - self.smoke_start_time).total_seconds() * 1000
 
         if time_diff >= 1000:  # 超过一秒
-            if self.smoke_count < 5:
+            if self.smoke_count < self.detThreshold:
                 # 如果计数小于5，重置计数器和开始时间
                 self.smoke_count = 0
                 self.smoke_start_time = current_time
@@ -201,7 +211,7 @@ class DetThread(QThread):
         time_diff = (current_time - self.fire_start_time).total_seconds() * 1000
 
         if time_diff >= 1000:  # 超过一秒
-            if self.fire_count < 5:
+            if self.fire_count < self.detThreshold:
                 # 如果计数小于5，重置计数器和开始时间
                 self.fire_count = 0
                 self.fire_start_time = current_time
@@ -214,7 +224,7 @@ class DetThread(QThread):
         time_diff = (current_time - self.person_start_time).total_seconds() * 1000
 
         if time_diff >= 1000:  # 超过一秒
-            if self.person_count < 5:
+            if self.person_count < self.detThreshold:
                 # 如果计数小于5，重置计数器和开始时间
                 self.person_count = 0
                 self.person_start_time = current_time
@@ -226,7 +236,7 @@ class DetThread(QThread):
         # 添加结束时间处理逻辑
         if self.smoke_end_time is not None:
             if (current_time - self.smoke_end_time).total_seconds() * 1000 >= 1000:
-                if self.smoke_end_count < 5:
+                if self.smoke_end_count < self.detThreshold:
                     saved_successfully = self.save_if_threshold_exceeded(self.smoke_count, self.smoke_end_count,
                                                                          self.smoke_start_time,
                                                                          self.smoke_end_time, '0')
@@ -243,7 +253,7 @@ class DetThread(QThread):
 
         if self.fire_end_time is not None:
             if (current_time - self.fire_end_time).total_seconds() * 1000 >= 1000:
-                if self.fire_end_count < 5:
+                if self.fire_end_count < self.detThreshold:
                     saved_successfully = self.save_if_threshold_exceeded(self.fire_count, self.fire_end_count,
                                                                          self.fire_start_time,
                                                                          self.fire_end_time, '1')
@@ -260,7 +270,7 @@ class DetThread(QThread):
 
         if self.person_end_time is not None:
             if (current_time - self.person_end_time).total_seconds() * 1000 >= 1000:
-                if self.person_end_count < 5:
+                if self.person_end_count < self.detThreshold:
                     saved_successfully = self.save_if_threshold_exceeded(self.person_count, self.person_end_count,
                                                                          self.person_start_time,
                                                                          self.person_end_time, '2')
@@ -278,7 +288,7 @@ class DetThread(QThread):
     def save_if_threshold_exceeded(self, start_count, end_count, start_time, end_time, cls):
         # 如果计数器超过阈值
         # print('Enter save_if_threshold_exceeded!')
-        if start_count > 5 > end_count:
+        if start_count > self.detThreshold > end_count:
             start_time_str = start_time.strftime('%Y-%m-%d_%H-%M-%S')
             end_time_str = end_time.strftime('%Y-%m-%d_%H-%M-%S')
             filename = f'{cls}_' + start_time_str + '__' + end_time_str + '.txt'
@@ -292,9 +302,16 @@ class DetThread(QThread):
 
     def saveTimestamp(self, start_time, end_time, filepath, cls):
         # 格式化开始时间和结束时间为字符串
-        start_time_str = start_time.strftime('%Y-%m-%d_%H-%M-%S')
-        end_time_str = end_time.strftime('%Y-%m-%d_%H-%M-%S')
-        # print('Ready to write {}!'.format(filepath))
+        start_time_str = start_time.strftime('%Y-%m-%d %H:%M:%S')
+        end_time_str = end_time.strftime('%Y-%m-%d %H:%M:%S')
+        print('Ready to write {}!'.format(filepath))
+        if (cls == '0') or (cls == '1') or (cls == '2' and self.checkingStranger):
+            c = self.conn.cursor()
+            c.execute("INSERT INTO testInsert (id, startTime, endTime, alarmType, camNo) VALUES (?, ?, ?, ?, ?)",
+                      (str(self.curInsertID), start_time_str, end_time_str, str(cls), str(self.source)))
+            self.conn.commit()
+            self.curInsertID += 1
+            self.send_infoInsert.emit(self.curInsertID)
         # 将时间戳写入文本文件
         with open(filepath, 'w') as file:
             file.write('{} {} {}'.format(cls, start_time_str, end_time_str))
@@ -328,6 +345,8 @@ class DetThread(QThread):
             out.release()
             os.remove(filepath)
             # os.rename(filepath, new_file_path)
+        self.conn.commit()
+        self.conn.close()
         super().quit()
 
 
@@ -336,7 +355,7 @@ class MainWindow(QMainWindow):
     isMaxi = False
 
     # DetThread
-    curInsertID = 211  # 这是当前(未)插入的最新id    (满减实现逻辑等我后面再写)
+    curInsertID = 0  # 这是当前(未)插入的最新id    (满减实现逻辑等我后面再写)
     threshold = 1000  # 数据库报警信息插入条数阈值
 
     # 这是PageTable实现的变量
@@ -349,7 +368,7 @@ class MainWindow(QMainWindow):
 
     ##############
     searchRowCnt = 10
-    videoFileSavePath = 'D:/大三下/软工课设/HomeSurface'
+    # fileSavePath = 'D:/大三下/软工课设/HomeSurface'
     videoFileSaveFolder = 'detect_results'
     SearchDatalist = [[]]
 
@@ -360,22 +379,15 @@ class MainWindow(QMainWindow):
         self.ui.setupUi(self)
         self._initUi()
         self._initPageTable()
-        self._initDetThread()
         self._initVideoReplay()
         self._initDatabase()
+        self._initDetThread()
         self._initVideoSearch()
         self._initUserPage()
-        self.ui.StrangerButton.clicked.connect(lambda x: self.test(x))
-
-    def test(self, checked):
-        if checked:
-            print("Checked")
-        else:
-            print("UnChecked")
 
     def videoReplay(self, infoGroup):
         if len(infoGroup[-2]) != 0:
-            absolute_path = os.path.join(self.videoFileSavePath, self.videoFileSaveFolder, self.folderName,
+            absolute_path = os.path.join(self.videoFileSaveFolder, self.folderName,
                                          infoGroup[-2])
             self.rtPageIndex = 3
             if not self.openVideoFile(absolute_path):
@@ -389,7 +401,7 @@ class MainWindow(QMainWindow):
             alarmEndTime = str(infoGroup[1]).split(' ')[1]
             alarmStartTime = datetime.strptime(alarmStartTime, "%H:%M:%S")
             alarmEndTime = datetime.strptime(alarmEndTime, "%H:%M:%S")
-            data = os.path.join(self.videoFileSavePath, self.videoFileSaveFolder, dateFolder)
+            data = os.path.join(self.videoFileSaveFolder, dateFolder)
             print('Path is ' + data)
             if os.path.exists(data):
                 mp4Files, _ = self.get_mp4_files(data)
@@ -495,7 +507,7 @@ class MainWindow(QMainWindow):
         # 检查当前的插入id号, 分(满)和(不满)两种情况处理
         if self.totalLinesCnt < self.threshold:  # 小于阈值, 正常加载数据
             # 这里应该是设置从pageIndex*self.alarmRowCount的位置开始读取self.alarmRowCount个    或许还是设计一个当前读取到的坐标(指针)比较好
-            c.execute("SELECT startTime, endTime, alarmType, camNo FROM alarmRecord ORDER BY id DESC LIMIT ? OFFSET ?",
+            c.execute("SELECT startTime, endTime, alarmType, camNo FROM testInsert ORDER BY id DESC LIMIT ? OFFSET ?",
                       (self.alarmRowCount,
                        self.alarmRowCount * (pageIndex - 1)))
             rows = c.fetchall()
@@ -512,7 +524,7 @@ class MainWindow(QMainWindow):
 
     def BtnLoadDataClick(self):
         c = self.conn.cursor()
-        c.execute("SELECT COUNT(*) FROM alarmRecord")
+        c.execute("SELECT COUNT(*) FROM testInsert")
         self.totalLinesCnt = c.fetchone()[0]
         self.pageTable.pageWidget.setMaxPage(math.ceil(self.totalLinesCnt / self.alarmRowCount))
         # print(type(self.pageTable.pageWidget))
@@ -606,7 +618,8 @@ class MainWindow(QMainWindow):
 
     def _initDatabase(self):
         self.dataBaseName = 'myDB.db'
-        self.conn = sql.connect(self.dataBaseName, isolation_level=None, uri=True)  # 启用WAL模式
+        self.conn = sql.connect(os.path.join(self.dataBaseName),
+                                isolation_level=None, uri=True, check_same_thread=False)  # 启用WAL模式
         c = self.conn.cursor()
         c.execute('''CREATE TABLE IF NOT EXISTS alarmRecord 
                     (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
@@ -678,9 +691,9 @@ class MainWindow(QMainWindow):
         # print("Selected Date: ", selected_date.toString("yyyy-MM-dd"))
         self.folderName = selected_date.toString("yyyyMMdd")
         # print(folderName)
-        if os.path.exists(os.path.join(self.videoFileSavePath, self.videoFileSaveFolder, self.folderName)):
+        if os.path.exists(os.path.join(self.videoFileSaveFolder, self.folderName)):
             self.mp4Files, self.fileSizes = self.get_mp4_files(
-                os.path.join(self.videoFileSavePath, self.videoFileSaveFolder, self.folderName))
+                os.path.join(self.videoFileSaveFolder, self.folderName))
             self.timestampGroup = []
             self.cameraNums = []
             for mp4file in self.mp4Files:
@@ -735,10 +748,19 @@ class MainWindow(QMainWindow):
 
     def _initDetThread(self):
         # detThread
-        self.detThread = DetThread(self.videoFileSavePath, self.threshold)
+        self.detThread = DetThread(self.dataBaseName, self.threshold)
         self.detThread.send_img.connect(lambda x: self.show_video(x, self.ui.out_video))
-        self.detThread.send_curInsertID.connect(lambda x: self.updateCurInsertID(x))
+        self.detThread.send_infoInsert.connect(lambda x: self.updateCurInsertID(x))
+        self.ui.StrangerButton.clicked.connect(lambda x: self.changeMode(x))
         self.detThread.start()
+
+    def changeMode(self, checked):
+        if checked:
+            print("开启陌生人识别")
+            self.detThread.checkingStranger = True
+        else:
+            print("关闭陌生人识别")
+            self.detThread.checkingStranger = False
 
     def _initVideoReplay(self):
         # VideoReplay
@@ -831,7 +853,6 @@ class MainWindow(QMainWindow):
 
     def addUser(self):
         self.regisDialog = registerDialog(firstIn=False)
-        self.regisDialog.setFixedSize(378, 440)
         self.regisDialog.exec_()
         self.updateUserPage()
 
@@ -882,8 +903,10 @@ class registerDialog(QDialog):
 
     def __init__(self, firstIn=True, parent=None):
         super().__init__(parent)
+        self.setFixedSize(480, 550)
         self.ui.setupUi(self)
         self.setWindowFlag(Qt.FramelessWindowHint)
+        self.setAttribute(Qt.WA_TranslucentBackground)
         self.ui.regisMiniButton.clicked.connect(self.showMinimized)
         self.ui.regisCloseButton.clicked.connect(self.reject)  # 这里要设置让后面的东西别出来了
         self.ui.userNameEdit.setValidator(self.userNameValidator)
@@ -898,8 +921,8 @@ class registerDialog(QDialog):
         self.ui.passwordConfirmEdit.setEchoMode(QLineEdit.Password)
         self.ui.passwordConfirmEdit.setPlaceholderText('与第一次的输入保持一致')
         self.ui.registerButton.clicked.connect(self.register)
-        self.databaseName = 'myDB.db'
-        self.conn = sql.connect(self.databaseName, isolation_level=None, uri=True)  # 启用WAL模式
+        self.dataBaseName = 'myDB.db'
+        self.conn = sql.connect(self.dataBaseName, isolation_level=None, uri=True)  # 启用WAL模式
         self.firstIn = firstIn
         if firstIn:
             QMessageBox.information(self, '', '首次登录，请先创建用户!')
@@ -939,16 +962,18 @@ class loginDialog(QDialog):
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.setFixedSize(480, 550)
         self.ui.setupUi(self)
         self.setWindowFlag(Qt.FramelessWindowHint)
+        self.setAttribute(Qt.WA_TranslucentBackground)
         self.ui.loginButton.clicked.connect(self.check)
         self.ui.loginMiniButton.clicked.connect(self.showMinimized)
         self.ui.loginCloseButton.clicked.connect(self.reject)
         # self.ui.loginCloseButton.clicked.connect(self.close)
         self.ui.passwordEdit.setEchoMode(QLineEdit.Password)
         self.tryLoginTimes = 4
-        self.databaseName = 'myDB.db'
-        self.conn = sql.connect(self.databaseName, isolation_level=None, uri=True)
+        self.dataBaseName = 'myDB.db'
+        self.conn = sql.connect(self.dataBaseName, isolation_level=None, uri=True)
 
     def check(self):
         # print('Enter Check!')
@@ -1022,8 +1047,8 @@ class loginDialog(QDialog):
 class Controller:
 
     def __init__(self):
-        self.databaseName = 'myDB.db'
-        self.conn = sql.connect(self.databaseName, isolation_level=None, uri=True)
+        self.dataBaseName = 'myDB.db'
+        self.conn = sql.connect(self.dataBaseName, isolation_level=None, uri=True)
         c = self.conn.cursor()
         c.execute('''CREATE TABLE IF NOT EXISTS userInfo 
                     (userID TEXT PRIMARY KEY NOT NULL,
@@ -1033,12 +1058,10 @@ class Controller:
 
     def show_register(self):
         self.regisDialog = registerDialog()
-        self.regisDialog.setFixedSize(378, 440)
         return self.regisDialog.exec_()
 
     def show_login(self):
         self.logDialog = loginDialog()
-        self.logDialog.setFixedSize(378, 440)
         return self.logDialog.exec_()
 
     def openLoginSurface(self):
