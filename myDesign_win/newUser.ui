@@ -121,6 +121,8 @@ QLineEdit{
 	border: none;
 	border-bottom: 2px solid rgba(255, 255, 255, 200);
 	font: 12pt &quot;MS Reference Sans Serif&quot;;
+	font: 16pt &quot;Cascadia Code&quot;;
+	padding: 4px;
 	color: rgb(255, 255, 255);
 }
 

@@ -116,6 +116,8 @@ class Ui_Dialog(object):
 "    border: none;\n"
 "    border-bottom: 2px solid rgba(255, 255, 255, 200);\n"
 "    font: 12pt \"MS Reference Sans Serif\";\n"
+"    font: 16pt \"Cascadia Code\";\n"
+"    padding: 4px;\n"
 "    color: rgb(255, 255, 255);\n"
 "}\n"
 "\n"

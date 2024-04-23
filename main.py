@@ -11,9 +11,9 @@ import sqlite3 as sql
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import QTimer, QDateTime, QUrl, QDate
 from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QDialog, QFileDialog, QGraphicsDropShadowEffect, \
-    QMessageBox, QLineEdit
-from PyQt5.QtCore import Qt, QThread, pyqtSignal, QObject, QEvent, QRect
-from PyQt5.QtGui import QImage, QPixmap, QMouseEvent, QEnterEvent, QColor, QCursor
+    QMessageBox, QLineEdit, QSizePolicy
+from PyQt5.QtCore import Qt, QThread, pyqtSignal, QObject, QEvent, QRect, QSize
+from PyQt5.QtGui import QImage, QPixmap, QMouseEvent, QEnterEvent, QColor, QCursor, QIcon
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from myDesign_win.home import Ui_MainWindow
@@ -24,9 +24,10 @@ from utils.PageTable import PageTable
 from utils.PageButton import PageButton, UserDelButton
 from utils.encryption import func_encrypt_config, func_decrypt_config
 from utils.lineEditValidator import LineEditValidator
+import apprcc_rc
 
 from ultralytics import YOLO
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # 设置这个可以确保屏幕分辨率不影响界面显示
 QtCore.QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
@@ -76,6 +77,8 @@ class DetThread(QThread):
         self.smoke_end_time = None
         self.fire_end_time = None
         self.person_end_time = None
+        # 由于视频打开时间有延迟, 所以(根据我的设备情况)设置一个偏移量
+        self.delta = 3
 
     def _initThreadDatabase(self):
         self.conn = sql.connect(os.path.join(self.dataBaseName),
@@ -87,6 +90,7 @@ class DetThread(QThread):
     def run(self):
         self.cap = cv2.VideoCapture(self.source)
         current_time = datetime.now()
+        current_time += timedelta(seconds=self.delta)
         current_time_str = current_time.strftime("%Y-%m-%d_%H-%M-%S")  # 将 current_time 转换为字符串形式，格式为年月日时分秒
         self.video_filename = f"{current_time_str}.mp4"  # 使用 current_time_str 作为视频文件名的一部分
         # 视频帧计数器
@@ -319,6 +323,7 @@ class DetThread(QThread):
     def quit(self) -> None:
         self.cap.release()
         self.out.release()
+        self.startTime += self.delta
         endTime = time.time()
         duration = endTime - self.startTime
         # averageFps = math.floor(self.frameCnt / duration)
@@ -363,7 +368,7 @@ class MainWindow(QMainWindow):
     # RowIndex = 0
     # pageCount = 15
 
-    alarmRowCount = 15
+    alarmRowCount = 10
     totalLinesCnt = 0  # 当前获取到的报警条数
 
     ##############
@@ -384,6 +389,7 @@ class MainWindow(QMainWindow):
         self._initDetThread()
         self._initVideoSearch()
         self._initUserPage()
+        self.gotoBlock(0)
 
     def videoReplay(self, infoGroup):
         if len(infoGroup[-2]) != 0:
@@ -435,11 +441,31 @@ class MainWindow(QMainWindow):
     def gotoBlock(self, index: int):
         # 设置跳转之后的初始刷新, 如果没有就会导致页面显示混乱
         if index == 1:
+            self.ui.page1Button.setChecked(False)
+            self.ui.page2Button.setChecked(True)
+            self.ui.page4Button.setChecked(False)
+            self.ui.page5Button.setChecked(False)
             self.BtnLoadDataClick()
         elif index == 3:
+            self.ui.page1Button.setChecked(False)
+            self.ui.page2Button.setChecked(False)
+            self.ui.page4Button.setChecked(True)
+            self.ui.page5Button.setChecked(False)
             self.BtnQureyClick()
-        else:
+        elif index == 4:
+            self.ui.page1Button.setChecked(False)
+            self.ui.page2Button.setChecked(False)
+            self.ui.page4Button.setChecked(False)
+            self.ui.page5Button.setChecked(True)
             self.updateUserPage()
+        elif index == 0:
+            self.ui.page1Button.setChecked(True)
+            self.ui.page2Button.setChecked(False)
+            self.ui.page4Button.setChecked(False)
+            self.ui.page5Button.setChecked(False)
+        elif index == 2:
+            self.speedMode = 3
+            self.changeSpeed()
         self.ui.stackedWidget.setCurrentIndex(index)
 
     def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:
@@ -520,7 +546,7 @@ class MainWindow(QMainWindow):
                 self.Datalist.append((i,) + row + (button,))  # 在每行的前面添加序号
                 j += 1
 
-        self.pageTable.SetData(self.Datalist)
+        self.pageTable.SetData(self.Datalist, dataType=0)
 
     def BtnLoadDataClick(self):
         c = self.conn.cursor()
@@ -543,20 +569,43 @@ class MainWindow(QMainWindow):
         self.player.setVolume(volume)
         self.ui.lab_audio.setText("volume:" + str(volume) + "%")
 
+    # def clickedSlider(self, position):
+    #     if self.player.duration() > 0:
+    #         video_position = int((position / 100) * self.player.duration())
+    #         self.player.setPosition(video_position)
+    #         self.ui.lab_video.setText("%.2f%%" % position)
+    #     else:
+    #         self.ui.sld_video.setValue(0)
+
     def clickedSlider(self, position):
         if self.player.duration() > 0:
+            # 计算视频当前播放的时间位置（以秒为单位）
             video_position = int((position / 100) * self.player.duration())
             self.player.setPosition(video_position)
-            self.ui.lab_video.setText("%.2f%%" % position)
+            # 将视频当前播放的时间位置转换为时间格式（小时:分钟:秒）
+            hours, remainder = divmod(video_position / 1000, 3600)
+            minutes, seconds = divmod(remainder, 60)
+            time_format = "%02d:%02d:%02d" % (hours, minutes, seconds)
+            # 设置 lab_video 的文本为时间格式
+            self.ui.lab_video.setText(time_format)
         else:
             self.ui.sld_video.setValue(0)
 
     def moveSlider(self, position):
         self.sld_video_pressed = True
         if self.player.duration() > 0:
+            # video_position = int((position / 100) * self.player.duration())
+            # self.player.setPosition(video_position)
+            # self.ui.lab_video.setText("%.2f%%" % position)
+            # 计算视频当前播放的时间位置（以秒为单位）
             video_position = int((position / 100) * self.player.duration())
             self.player.setPosition(video_position)
-            self.ui.lab_video.setText("%.2f%%" % position)
+            # 将视频当前播放的时间位置转换为时间格式（小时:分钟:秒）
+            hours, remainder = divmod(video_position / 1000, 3600)
+            minutes, seconds = divmod(remainder, 60)
+            time_format = "%02d:%02d:%02d" % (hours, minutes, seconds)
+            # 设置 lab_video 的文本为时间格式
+            self.ui.lab_video.setText(time_format)
 
     def pressSlider(self):
         self.sld_video_pressed = True
@@ -569,7 +618,14 @@ class MainWindow(QMainWindow):
         if not self.sld_video_pressed:
             self.videoLength = self.player.duration() + 0.1
             self.ui.sld_video.setValue(round((position / self.videoLength) * 100))
-            self.ui.lab_video.setText("%.2f%%" % ((position / self.videoLength) * 100))
+            # 计算视频当前播放的时间位置（以秒为单位）
+            video_position = int(position)
+            # 将视频当前播放的时间位置转换为时间格式（小时:分钟:秒）
+            hours, remainder = divmod(video_position / 1000, 3600)
+            minutes, seconds = divmod(remainder, 60)
+            time_format = "%02d:%02d:%02d" % (hours, minutes, seconds)
+            # 设置 lab_video 的文本为时间格式
+            self.ui.lab_video.setText(time_format)
 
     def openVideoFile(self, absolutePath: str, jumpSec=0) -> bool:
         if os.path.isfile(absolutePath):
@@ -584,10 +640,13 @@ class MainWindow(QMainWindow):
             return False
 
     def playVideo(self):
-        self.player.play()
+        if self.ui.btn_play.isChecked():
+            self.player.pause()
+        else:
+            self.player.play()
 
-    def pauseVideo(self):
-        self.player.pause()
+    def stopVideo(self):
+        self.player.stop()
 
     def _initUi(self):
         # Ui
@@ -602,7 +661,7 @@ class MainWindow(QMainWindow):
         self.setWindowFlag(Qt.FramelessWindowHint)
         self.ui.page1Button.clicked.connect(lambda: self.gotoBlock(0))
         self.ui.page2Button.clicked.connect(lambda: self.gotoBlock(1))
-        self.ui.page3Button.clicked.connect(lambda: self.gotoBlock(2))
+        # self.ui.page3Button.clicked.connect(lambda: self.gotoBlock(2))
         self.ui.page4Button.clicked.connect(lambda: self.gotoBlock(3))
         self.ui.page5Button.clicked.connect(lambda: self.gotoBlock(4))
         self.ui.titleGroupBox.mouseDoubleClickEvent = self.onTitleBarDoubleClicked
@@ -612,7 +671,8 @@ class MainWindow(QMainWindow):
         self.ui.closeButton.setMouseTracking(True)
         self.ui.maxiButton.setMouseTracking(True)
         self.ui.miniButton.setMouseTracking(True)
-        self.ui.groupBox.installEventFilter(self)
+        # self.ui.groupBox.installEventFilter(self)
+        self.ui.frame.installEventFilter(self)
         self.m_flag = False
         self.direction = None
 
@@ -636,13 +696,27 @@ class MainWindow(QMainWindow):
         self.pageTable = PageTable(header, self.alarmRowCount)
         self.ui.testLayout.addLayout(self.pageTable)
         self.pageTable.pageWidget.send_curPage.connect(lambda x: self.PageChange(x))
+        self.pageTable.tableWidget.setShowGrid(False)
+        # self.pageTable.tableWidget.horizontalHeader().setDefaultSectionSize(50)
+        self.pageTable.tableWidget.verticalHeader().setDefaultSectionSize(40)
         self.ui.btnLoadData.clicked.connect(self.BtnLoadDataClick)
         self.pageButtons = []
         for i in range(self.alarmRowCount):
             button = PageButton()
             button.btnNo = i + 1
-            button.setText('回 放')
+            # button.setText('回 放')
             button.send_myNo.connect(lambda x: self.videoReplay(x))
+            icon = QIcon(':/home/icon/arrow-right.png')
+            button.setIcon(icon)
+            button.setIconSize(QSize(20, 20))
+            button.setStyleSheet('''QPushButton {
+                background: transparent;
+                border: none;
+                border-radius: 5px;
+            }
+            QPushButton:hover {background-color: rgb(222, 222, 222);}
+            QPushButton:pressed {background-color: rgb(189, 189, 189);}
+            ''')
             self.pageButtons.append(button)
 
     def _initVideoSearch(self):
@@ -652,12 +726,24 @@ class MainWindow(QMainWindow):
         self.ui.searchLayout.addLayout(self.searchTable)
         self.searchTable.pageWidget.send_curPage.connect(lambda x: self.searchPageChange(x))
         self.ui.queryButton.clicked.connect(self.BtnQureyClick)
+        self.searchTable.tableWidget.setShowGrid(False)
+        self.searchTable.tableWidget.verticalHeader().setDefaultSectionSize(40)
         self.searchPageButtons = []
         for i in range(self.searchRowCnt):
             button = PageButton()
             button.btnNo = i + 1
-            button.setText('回 放')
             button.send_myNo.connect(lambda x: self.videoReplay(x))
+            icon = QIcon(':/home/icon/arrow-right.png')
+            button.setIcon(icon)
+            button.setIconSize(QSize(20, 20))
+            button.setStyleSheet('''QPushButton {
+                background: transparent;
+                border: none;
+                border-radius: 5px;
+            }
+            QPushButton:hover {background-color: rgb(222, 222, 222);}
+            QPushButton:pressed {background-color: rgb(189, 189, 189);}
+            ''')
             self.searchPageButtons.append(button)
 
     def searchPageChange(self, currentPage: int):
@@ -683,7 +769,7 @@ class MainWindow(QMainWindow):
                        [str(self.fileSizes[i])] + [self.searchPageButtons[i % self.searchRowCnt]]
             self.SearchDatalist.append(tempList)
         # print(self.SearchDatalist)
-        self.searchTable.SetData(self.SearchDatalist)
+        self.searchTable.SetData(self.SearchDatalist, dataType=1)
 
     def BtnQureyClick(self):
         # 获取QDateEdit里面的内容, 然后根据它去查找视频回放 (定义好文件夹和视频的保存路径以及文件名称
@@ -751,14 +837,16 @@ class MainWindow(QMainWindow):
         self.detThread = DetThread(self.dataBaseName, self.threshold)
         self.detThread.send_img.connect(lambda x: self.show_video(x, self.ui.out_video))
         self.detThread.send_infoInsert.connect(lambda x: self.updateCurInsertID(x))
-        self.ui.StrangerButton.clicked.connect(lambda x: self.changeMode(x))
+        self.ui.StrangerButton.clicked.connect(self.changeMode)
         self.detThread.start()
 
-    def changeMode(self, checked):
-        if checked:
+    def changeMode(self):
+        if self.ui.StrangerButton.isChecked():
             print("开启陌生人识别")
+            self.ui.StrangerButton.setText("关闭陌生人识别")
             self.detThread.checkingStranger = True
         else:
+            self.ui.StrangerButton.setText("开启陌生人识别")
             print("关闭陌生人识别")
             self.detThread.checkingStranger = False
 
@@ -768,7 +856,7 @@ class MainWindow(QMainWindow):
         self.player = QMediaPlayer()
         self.player.setVideoOutput(self.ui.wgt_video)
         self.ui.btn_play.clicked.connect(self.playVideo)
-        self.ui.btn_stop.clicked.connect(self.pauseVideo)
+        self.ui.btn_stop.clicked.connect(self.stopVideo)
         self.player.positionChanged.connect(self.changeSlider)
         self.ui.sld_video.setTracking(False)
         self.ui.sld_video.sliderReleased.connect(self.releaseSlider)
@@ -778,6 +866,23 @@ class MainWindow(QMainWindow):
         self.ui.sld_audio.valueChanged.connect(self.volumnChange)
         self.rtPageIndex = 0  # 返回的页面下标
         self.ui.returnBtn.clicked.connect(self.rtBlock)
+        self.speedMode = 0  # 0是1倍速, 1是1.25倍速, 2是1.5倍速, 3是2倍速
+        self.ui.zoomBtn.clicked.connect(self.changeSpeed)
+
+    def changeSpeed(self):
+        self.speedMode = (self.speedMode + 1) % 4
+        if self.speedMode == 0:
+            self.ui.zoomBtn.setText('1.0×')
+            self.player.setPlaybackRate(1.0)
+        elif self.speedMode == 1:
+            self.ui.zoomBtn.setText('1.25×')
+            self.player.setPlaybackRate(1.25)
+        elif self.speedMode == 2:
+            self.ui.zoomBtn.setText('1.5×')
+            self.player.setPlaybackRate(1.5)
+        else:
+            self.ui.zoomBtn.setText('2.0×')
+            self.player.setPlaybackRate(2.0)
 
     def rtBlock(self):
         self.player.stop()
@@ -793,12 +898,24 @@ class MainWindow(QMainWindow):
         self.userTable = PageTable(header, self.userpageRowCnt)
         self.ui.userLayout.addLayout(self.userTable)
         self.userTable.pageWidget.send_curPage.connect(lambda x: self.userPageChange(x))
+        self.userTable.tableWidget.setShowGrid(False)
+        self.userTable.tableWidget.verticalHeader().setDefaultSectionSize(40)
         self.userPageButtons = []
         for i in range(self.userpageRowCnt):
             button = UserDelButton()
             button.btnNo = i + 1
-            button.setText('删 除')
+            icon = QIcon(':/home/icon/people-delete.png')
+            button.setIcon(icon)
+            button.setIconSize(QSize(25, 25))
             button.send_myNo.connect(lambda x: self.deleteUser(x))
+            button.setStyleSheet('''QPushButton {
+                background: transparent;
+                border: none;
+                border-radius: 5px;
+            }
+            QPushButton:hover {background-color: rgb(222, 222, 222);}
+            QPushButton:pressed {background-color: rgb(189, 189, 189);}
+            ''')
             self.userPageButtons.append(button)
 
     def userPageChange(self, currenPage: int):
@@ -823,7 +940,7 @@ class MainWindow(QMainWindow):
             self.UserDatalist.append(tmpList)
             j += 1
         # print(self.UserDatalist)
-        self.userTable.SetData(self.UserDatalist)
+        self.userTable.SetData(self.UserDatalist, dataType=2)
 
     def updateUserPage(self):
         c = self.conn.cursor()

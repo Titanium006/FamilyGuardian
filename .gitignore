@@ -7,3 +7,5 @@ detect_results
 data/
 *.qrc
 *.png
+*.jpg
+icon/

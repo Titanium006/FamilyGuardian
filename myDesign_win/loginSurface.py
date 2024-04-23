@@ -116,9 +116,10 @@ class Ui_Dialog(object):
 "    border: none;\n"
 "    border-bottom: 2px solid rgba(255, 255, 255, 200);\n"
 "    font: 12pt \"MS Reference Sans Serif\";\n"
+"    font: 16pt \"Cascadia Code\";\n"
+"    padding: 4px;\n"
 "    color: rgb(255, 255, 255);\n"
 "}\n"
-"\n"
 "")
         self.verticalLayout_3 = QtWidgets.QVBoxLayout(Dialog)
         self.verticalLayout_3.setContentsMargins(0, 0, 0, 0)
@@ -224,6 +225,7 @@ class Ui_Dialog(object):
         sizePolicy.setHeightForWidth(self.passwordEdit.sizePolicy().hasHeightForWidth())
         self.passwordEdit.setSizePolicy(sizePolicy)
         self.passwordEdit.setMinimumSize(QtCore.QSize(0, 50))
+        self.passwordEdit.setEchoMode(QtWidgets.QLineEdit.Password)
         self.passwordEdit.setObjectName("passwordEdit")
         self.horizontalLayout_2.addWidget(self.passwordEdit)
         self.verticalLayout.addLayout(self.horizontalLayout_2)
