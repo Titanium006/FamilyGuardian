@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1355</width>
+    <width>1363</width>
     <height>901</height>
    </rect>
   </property>
@@ -161,12 +161,24 @@ QPushButton#page1Button{
 }</string>
   </property>
   <widget class="QWidget" name="centralwidget">
+   <property name="styleSheet">
+    <string notr="true">#frame {border: none;}
+#frame_3 {border: none;}
+#frame_2 {border: none;}
+#groupBox_2 {border: none;}</string>
+   </property>
    <layout class="QVBoxLayout" name="verticalLayout_11">
     <property name="leftMargin">
-     <number>0</number>
+     <number>3</number>
     </property>
     <property name="topMargin">
-     <number>0</number>
+     <number>3</number>
+    </property>
+    <property name="rightMargin">
+     <number>3</number>
+    </property>
+    <property name="bottomMargin">
+     <number>3</number>
     </property>
     <item>
      <widget class="QFrame" name="frame">
@@ -191,13 +203,16 @@ QPushButton#page1Button{
        </property>
        <item>
         <widget class="QFrame" name="frame_3">
+         <property name="styleSheet">
+          <string notr="true"/>
+         </property>
          <property name="frameShape">
           <enum>QFrame::StyledPanel</enum>
          </property>
          <property name="frameShadow">
           <enum>QFrame::Raised</enum>
          </property>
-         <layout class="QHBoxLayout" name="horizontalLayout">
+         <layout class="QHBoxLayout" name="horizontalLayout" stretch="1,5">
           <property name="spacing">
            <number>0</number>
           </property>
@@ -338,6 +353,9 @@ QPushButton#page1Button{
           </item>
           <item>
            <widget class="QFrame" name="frame_2">
+            <property name="styleSheet">
+             <string notr="true"/>
+            </property>
             <property name="frameShape">
              <enum>QFrame::StyledPanel</enum>
             </property>
@@ -490,6 +508,9 @@ QPushButton#page1Button{
                   <property name="checkable">
                    <bool>true</bool>
                   </property>
+                  <property name="checked">
+                   <bool>false</bool>
+                  </property>
                  </widget>
                 </item>
                 <item>
@@ -522,7 +543,7 @@ background-color: rgb(157, 157, 157);
 }</string>
                </property>
                <property name="currentIndex">
-                <number>4</number>
+                <number>2</number>
                </property>
                <widget class="QWidget" name="page">
                 <layout class="QVBoxLayout" name="verticalLayout_8">
@@ -530,7 +551,7 @@ background-color: rgb(157, 157, 157);
                   <number>0</number>
                  </property>
                  <property name="topMargin">
-                  <number>4</number>
+                  <number>0</number>
                  </property>
                  <property name="rightMargin">
                   <number>0</number>
@@ -572,6 +593,10 @@ background-color: rgb(238, 241, 246);
 }
 #alarmlabel{
 	image: url(:/home/icon/条形图_chart-histogram-two.png);
+}
+
+QAbstractItemView {
+font: bold 10pt &quot;DengXian&quot;;
 }</string>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_6">
@@ -960,6 +985,9 @@ background-color: rgb(238, 241, 246);
                         </property>
                         <property name="checkable">
                          <bool>true</bool>
+                        </property>
+                        <property name="checked">
+                         <bool>false</bool>
                         </property>
                        </widget>
                       </item>
@@ -1456,6 +1484,9 @@ color: rgb(200, 200, 200);
 }
 #userAddBtn:pressed{
 	background-color: rgb(0, 108, 45);
+}
+QAbstractItemView {
+font: bold 10pt &quot;DengXian&quot;;
 }</string>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_10" stretch="0">

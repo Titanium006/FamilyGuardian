@@ -49,6 +49,7 @@ class PageTable(QVBoxLayout):
                                        # "background: rgb(255, 255, 255);"
                                        "alternate-background-color: rgb(251, 251, 251);"
                                        "outline: none;"
+                                       "font:bold 13px \"DengXian\";"
                                        "}"
                                        "QTableWidget::Item {"
                                        "border: 0px;"
@@ -84,31 +85,34 @@ class PageTable(QVBoxLayout):
     def SetData(self, DataList, dataType=1):
         iconPath = ''
         iconSize = 1
-        if dataType == 0 or 1:
+        if dataType == 0 or dataType == 1:
             iconPath = ':/home/icon/arrow-right.png'
             iconSize = 20
         elif dataType == 2:
             iconPath = ':/home/icon/people-delete.png'
             iconSize = 25
         if len(DataList) < self.rowCount:
+            for i in range(0, len(DataList)):
+                widget = self.tableWidget.cellWidget(i, self.headerLen - 1)
+                if widget is not None:
+                    widget.setIcon(QIcon(iconPath))
+                    widget.setEnabled(True)
+                    widget.setIconSize(QSize(iconSize, iconSize))
+                    widget.setDown(False)
+                    widget.show()
             for i in range(len(DataList), self.rowCount):
                 for j in range(self.headerLen - 1):
                     if dataType == 0 and j == 3:
-                        # print('Enter Hiding Label!')
-                        # widget = self.tableWidget.cellWidget(i, j)
-                        # if widget is not None:
-                        #     widget.hide()
-                        #     continue
                         self.tableWidget.removeCellWidget(i, j)
                         continue
                     itm = QTableWidgetItem("")
                     itm.setTextAlignment(Qt.AlignVCenter | Qt.AlignHCenter)
                     self.tableWidget.setItem(i, j, itm)
-                # btn = self.tableWidget.removeCellWidget(i, self.headerLen - 1)
                 widget = self.tableWidget.cellWidget(i, self.headerLen - 1)
                 if widget is not None:
                     widget.setIcon(QIcon())
                     widget.setEnabled(False)
+                    widget.setDown(False)
                     widget.hide()
         else:
             for i in range(self.rowCount):
@@ -118,11 +122,6 @@ class PageTable(QVBoxLayout):
                     widget.setEnabled(True)
                     widget.setIconSize(QSize(iconSize, iconSize))
                     widget.show()
-            # if dataType == 0:
-            #     for i in range(self.rowCount):
-            #         widget = self.tableWidget.cellWidget(i, 3)
-            #         if widget is not None:
-            #             widget.show()
         if len(DataList) == 0 or (DataList[0]) == 0:
             return
         for i in range(len(DataList)):
@@ -131,23 +130,15 @@ class PageTable(QVBoxLayout):
                 qItem = QTableWidgetItem(str(Item[j]))
                 qItem.setTextAlignment(Qt.AlignVCenter | Qt.AlignHCenter)
                 if dataType == 0 and j == 3:
-                    # 获取当前文件的绝对路径
-                    current_file_path = os.path.abspath(__file__)
-                    # 获取当前文件的父目录
-                    parent_directory = os.path.dirname(current_file_path)
-                    # 获取父目录的父目录，即当前目录的父目录
-                    grandparent_directory = os.path.dirname(parent_directory)
                     qItem.setText('')
-                    # print(grandparent_directory)
-                    # print(os.path.join(grandparent_directory, 'icon/fog.png'))
                     label = QLabel()
                     pixmap = QPixmap()
                     if str(Item[j]) == '0':  # 烟雾
-                        pixmap = QPixmap(os.path.join(grandparent_directory, 'icon/fog.png'))
+                        pixmap = QPixmap(':/home/icon/fog.png')
                     elif str(Item[j]) == '1':  # 火焰
-                        pixmap = QPixmap(os.path.join(grandparent_directory, 'icon/fire.png'))
+                        pixmap = QPixmap(':/home/icon/fire.png')
                     elif str(Item[j]) == '2':  # 陌生人员
-                        pixmap = QPixmap(os.path.join(grandparent_directory, 'icon/people.png'))
+                        pixmap = QPixmap(':/home/icon/people.png')
                     pixmap = pixmap.scaled(25, 25)
                     label.setPixmap(pixmap)
                     # label.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)

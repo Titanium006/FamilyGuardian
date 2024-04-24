@@ -24,6 +24,7 @@ from utils.PageTable import PageTable
 from utils.PageButton import PageButton, UserDelButton
 from utils.encryption import func_encrypt_config, func_decrypt_config
 from utils.lineEditValidator import LineEditValidator
+from utils.CustomMessageBox import MessageBox
 import apprcc_rc
 
 from ultralytics import YOLO
@@ -398,7 +399,8 @@ class MainWindow(QMainWindow):
             self.rtPageIndex = 3
             if not self.openVideoFile(absolute_path):
                 self.rtPageIndex = 0
-                QMessageBox.information(self, '', '回放文件不存在或已被清理!')
+                # QMessageBox.information(self, '', '回放文件不存在或已被清理!')
+                MessageBox(text='回放文件不存在或已被清理!', mode=0).exec_()
         else:
             # infoGroup = [self.startTime, self.endTime, self.camNo, self.fileName, self.btnNo]  格式: 2024-10-30 09:53:00
             dateFolder, alarmStartTime = str(infoGroup[0]).split(' ')
@@ -423,17 +425,21 @@ class MainWindow(QMainWindow):
                         self.rtPageIndex = 1
                         if not self.openVideoFile(os.path.join(data, file), jumpSec):
                             self.rtPageIndex = 0
-                            QMessageBox.information(self, '', '回放文件不存在或已被清理!')
+                            # QMessageBox.information(self, '', '回放文件不存在或已被清理!')
+                            MessageBox(text='回放文件不存在或已被清理!', mode=0).exec_()
                         break
                 if not findOne:
                     self.rtPageIndex = 0
-                    QMessageBox.information(self, '', '回放文件不存在或已被清理!')
+                    MessageBox(text='回放文件不存在或已被清理!', mode=0).exec_()
+                    # QMessageBox.information(self, '', '回放文件不存在或已被清理!')
             else:
                 self.rtPageIndex = 0
-                QMessageBox.information(self, '', '回放文件不存在或已被清理!')
+                MessageBox(text='回放文件不存在或已被清理!', mode=0).exec_()
+                # QMessageBox.information(self, '', '回放文件不存在或已被清理!')
 
     def myClose(self):
         self.detThread.quit()
+        MessageBox(text='正在关闭程序...', auto=True, time=2000, mode=2, iconpath=':/home/icon/bye.png').exec_()
         self.conn.commit()  # 这里提交用户账号信息的修改, 防止出现同时写的报错和不一致情况
         self.conn.close()
         self.close()
@@ -471,10 +477,10 @@ class MainWindow(QMainWindow):
     def mouseMoveEvent(self, event: QtGui.QMouseEvent) -> None:
         # print('Enter MouseMoveEvent!')
         self.right_edge = QRect(self.width() - 10, 0, self.width(), self.height())
-        self.bottom_edge = QRect(0, self.height() - 10, self.width() - 25, self.height())
+        self.bottom_edge = QRect(0, self.height() - 20, self.width() - 25, self.height())
         self.right_bottom_edge = QRect(self.width() - 25, self.height() - 10, self.width(), self.height())
 
-        self.windowRange = QRect(0, 0, self.width() - 25, self.height() - 10)
+        self.windowRange = QRect(0, 0, self.width() - 25, self.height() - 20)
 
         if not self.isMaximized():
             if self.bottom_edge.contains(event.pos()):
@@ -522,9 +528,11 @@ class MainWindow(QMainWindow):
         if not self.isMaxi:
             self.showMaximized()
             self.isMaxi = True
+            self.ui.maxiButton.setChecked(True)
         else:
             self.showNormal()
             self.isMaxi = False
+            self.ui.maxiButton.setChecked(False)
 
     def LoadPage(self, pageIndex: int):
         self.Datalist.clear()
@@ -665,14 +673,19 @@ class MainWindow(QMainWindow):
         self.ui.page4Button.clicked.connect(lambda: self.gotoBlock(3))
         self.ui.page5Button.clicked.connect(lambda: self.gotoBlock(4))
         self.ui.titleGroupBox.mouseDoubleClickEvent = self.onTitleBarDoubleClicked
+
         self.setMouseTracking(True)
         self.ui.centralwidget.setMouseTracking(True)
         self.ui.titleGroupBox.setMouseTracking(True)
+        self.ui.frame.setMouseTracking(True)
+        self.ui.frame_2.setMouseTracking(True)
+        self.ui.frame_3.setMouseTracking(True)
         self.ui.closeButton.setMouseTracking(True)
         self.ui.maxiButton.setMouseTracking(True)
         self.ui.miniButton.setMouseTracking(True)
         # self.ui.groupBox.installEventFilter(self)
-        self.ui.frame.installEventFilter(self)
+        # self.ui.frame.installEventFilter(self)
+        self.ui.stackedWidget.installEventFilter(self)
         self.m_flag = False
         self.direction = None
 
@@ -721,7 +734,7 @@ class MainWindow(QMainWindow):
 
     def _initVideoSearch(self):
         self.ui.dateEdit.setDate(QDate.currentDate())
-        header = ["序号", "录像名称", "开始时间", "结束时间", "摄像头编号", "文件大小", "操作"]
+        header = ["序号", "录像名称", "开始时间", "结束时间", "摄像头编号", "文件大小(MB)", "操作"]
         self.searchTable = PageTable(header, self.searchRowCnt)
         self.ui.searchLayout.addLayout(self.searchTable)
         self.searchTable.pageWidget.send_curPage.connect(lambda x: self.searchPageChange(x))
@@ -793,7 +806,8 @@ class MainWindow(QMainWindow):
             self.searchTable.pageWidget.setCurrentPage(1, True)
             self.LoadSearchPage(1)
         else:
-            QMessageBox.information(self, '', '暂无可查看回放！')
+            MessageBox(text='暂无可查看回放！', mode=0).exec_()
+            # QMessageBox.information(self, '', '暂无可查看回放！')
             return
 
     def get_mp4_files(self, directory):
@@ -886,6 +900,7 @@ class MainWindow(QMainWindow):
 
     def rtBlock(self):
         self.player.stop()
+        self.ui.btn_play.setChecked(False)
         self.gotoBlock(self.rtPageIndex)
 
     def updateCurInsertID(self, id: int):
@@ -952,18 +967,13 @@ class MainWindow(QMainWindow):
 
     def deleteUser(self, infoGroup):
         if self.totalUserCnt == 1:
-            QMessageBox.information(self, '', '无法删除唯一的用户!')
+            MessageBox(text='无法删除唯一的用户!', mode=0).exec_()
         else:
-            msgBox = QMessageBox()
-            msgBox.setText('确定要删除该用户吗?')
-            msgBox.addButton(QMessageBox.Yes)
-            msgBox.addButton(QMessageBox.No)
+            msgBox = MessageBox(text='确定要删除该用户吗?', mode=1, iconpath=':/home/icon/people-delete-white.png')
             response = msgBox.exec_()
             if response == QMessageBox.Yes:
-                # print('userIDtodel:' + infoGroup[0])
                 userID = infoGroup[0]
                 c = self.conn.cursor()
-                # print('encryptedID: ' + userID)
                 c.execute('DELETE FROM userInfo WHERE userID = ?', (userID,))
                 self.conn.commit()
                 self.updateUserPage()
@@ -1042,18 +1052,33 @@ class registerDialog(QDialog):
         self.conn = sql.connect(self.dataBaseName, isolation_level=None, uri=True)  # 启用WAL模式
         self.firstIn = firstIn
         if firstIn:
-            QMessageBox.information(self, '', '首次登录，请先创建用户!')
+            MessageBox(time=3000, text='首次登录，请先创建用户!',
+                       mode=2, iconpath=':/home/icon/add-mode.png', auto=True).exec_()
+            # QMessageBox.information(self, '', '首次登录，请先创建用户!')
 
     def register(self):
         userInput_Name = self.ui.userNameEdit.text()
         userInput_Password = self.ui.passwordEdit.text()
         userInput_PasswordConfirm = self.ui.passwordConfirmEdit.text()
+        c = self.conn.cursor()
+        c.execute('SELECT userID FROM userInfo')
+        rows = c.fetchall()     # [('admin1',), ('admin2',)...]
+        for row in rows:
+            if userInput_Name == row[0]:
+                MessageBox(text='用户名不能重复!', mode=0).exec_()
+                self.ui.userNameEdit.clear()
+                self.ui.passwordEdit.clear()
+                self.ui.passwordConfirmEdit.clear()
+                self.ui.userNameEdit.setFocus()
+                return
         if len(userInput_Name) == 0 or len(userInput_Password) == 0 or len(userInput_PasswordConfirm) == 0:
-            QMessageBox.information(self, '', '用户名/密码不能为空!')
+            MessageBox(text='用户名/密码不能为空!', mode=0).exec_()
+            # QMessageBox.information(self, '', '用户名/密码不能为空!')
             self.ui.userNameEdit.setFocus()
             return
         if userInput_Password != userInput_PasswordConfirm:
-            QMessageBox.information(self, '', '两次输入的密码不一致!')
+            MessageBox(text='两次输入的密码不一致!', mode=0).exec_()
+            # QMessageBox.information(self, '', '两次输入的密码不一致!')
             self.ui.passwordEdit.clear()
             self.ui.passwordConfirmEdit.clear()
             self.ui.passwordEdit.setFocus()
@@ -1063,13 +1088,10 @@ class registerDialog(QDialog):
         userCode = func_encrypt_config(key, userInput_Password)
         c.execute('INSERT INTO userInfo (userID, userCode) VALUES (?, ?)', (userInput_Name, userCode))
         if self.firstIn:
-            # 注册成功
-            msgBox = QMessageBox()
-            msgBox.setText('注册成功!\n即将转到登陆界面...')
-            timer = QTimer()
-            timer.timeout.connect(msgBox.close)
-            timer.start(3000)
-            msgBox.exec_()
+            MessageBox(text='注册成功!\n即将转到登陆界面...', mode=2, auto=True,
+                       time=2000, iconpath=':/home/icon/good-two.png').exec_()
+        else:
+            MessageBox(text='注册成功!', mode=2, auto=True, time=1000, iconpath=':/home/icon/good-two.png').exec_()
         self.conn.close()
         self.accept()
 
@@ -1107,20 +1129,22 @@ class loginDialog(QDialog):
         if self.check_credentials(userInfo, userInput_Name, userInput_Password) == 1:
             print('登录成功!')
             # QMessageBox.information(self, 'Congratulation!', '登陆成功!')
-            msgBox = QMessageBox()
-            msgBox.setText('登陆成功!')
-            timer = QTimer()
-            timer.timeout.connect(msgBox.close)
-            timer.start(2000)
-            msgBox.exec_()
-            print('Ready to Accept!')
+            # msgBox = QMessageBox()
+            # msgBox.setText('登陆成功!')
+            # timer = QTimer()
+            # timer.timeout.connect(msgBox.close)
+            # timer.start(2000)
+            # msgBox.exec_()
+            MessageBox(text='登陆成功!', mode=2, auto=True, time=2000, iconpath=':/home/icon/good-two.png').exec_()
+            # print('Ready to Accept!')
             self.conn.close()
             self.accept()
         elif self.check_credentials(userInfo, userInput_Name, userInput_Password) == 2:
             print('密码错误!')
             self.ui.passwordEdit.clear()
             self.tryLoginTimes -= 1
-            QMessageBox.information(self, '', '密码错误!你还有{}次机会!'.format(self.tryLoginTimes))
+            MessageBox(text='密码错误!你还有{}次机会!'.format(self.tryLoginTimes), mode=0).exec_()
+            # QMessageBox.information(self, '', '密码错误!你还有{}次机会!'.format(self.tryLoginTimes))
             if self.tryLoginTimes == 0:
                 self.conn.close()
                 self.reject()
@@ -1130,7 +1154,8 @@ class loginDialog(QDialog):
             self.ui.passwordEdit.clear()
             self.ui.userNameEdit.setFocus()
             self.tryLoginTimes -= 1
-            QMessageBox.information(self, '', '账号错误!你还有{}次机会!'.format(self.tryLoginTimes))
+            MessageBox(text='账号错误!你还有{}次机会!'.format(self.tryLoginTimes), mode=0).exec_()
+            # QMessageBox.information(self, '', '账号错误!你还有{}次机会!'.format(self.tryLoginTimes))
             if self.tryLoginTimes == 0:
                 self.conn.close()
                 self.reject()

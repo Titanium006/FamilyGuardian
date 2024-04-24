@@ -161,9 +161,13 @@ class Ui_MainWindow(object):
 "    padding-left: 16px;\n"
 "}")
         self.centralwidget = QtWidgets.QWidget(MainWindow)
+        self.centralwidget.setStyleSheet("#frame {border: none;}\n"
+"#frame_3 {border: none;}\n"
+"#frame_2 {border: none;}\n"
+"#groupBox_2 {border: none;}")
         self.centralwidget.setObjectName("centralwidget")
         self.verticalLayout_11 = QtWidgets.QVBoxLayout(self.centralwidget)
-        self.verticalLayout_11.setContentsMargins(0, 0, -1, -1)
+        self.verticalLayout_11.setContentsMargins(3, 3, 3, 3)
         self.verticalLayout_11.setObjectName("verticalLayout_11")
         self.frame = QtWidgets.QFrame(self.centralwidget)
         self.frame.setStyleSheet("")
@@ -173,6 +177,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout_9.setSpacing(0)
         self.horizontalLayout_9.setObjectName("horizontalLayout_9")
         self.frame_3 = QtWidgets.QFrame(self.frame)
+        self.frame_3.setStyleSheet("")
         self.frame_3.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.frame_3.setFrameShadow(QtWidgets.QFrame.Raised)
         self.frame_3.setObjectName("frame_3")
@@ -230,6 +235,7 @@ class Ui_MainWindow(object):
         self.verticalLayout.addItem(spacerItem)
         self.horizontalLayout.addWidget(self.groupBox_2)
         self.frame_2 = QtWidgets.QFrame(self.frame_3)
+        self.frame_2.setStyleSheet("")
         self.frame_2.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.frame_2.setFrameShadow(QtWidgets.QFrame.Raised)
         self.frame_2.setObjectName("frame_2")
@@ -304,7 +310,7 @@ class Ui_MainWindow(object):
         self.page = QtWidgets.QWidget()
         self.page.setObjectName("page")
         self.verticalLayout_8 = QtWidgets.QVBoxLayout(self.page)
-        self.verticalLayout_8.setContentsMargins(0, 4, 0, 0)
+        self.verticalLayout_8.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout_8.setObjectName("verticalLayout_8")
         self.out_video = QtWidgets.QLabel(self.page)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
@@ -330,6 +336,10 @@ class Ui_MainWindow(object):
 "}\n"
 "#alarmlabel{\n"
 "    image: url(:/home/icon/条形图_chart-histogram-two.png);\n"
+"}\n"
+"\n"
+"QAbstractItemView {\n"
+"font: bold 10pt \"DengXian\";\n"
 "}")
         self.page_2.setObjectName("page_2")
         self.verticalLayout_6 = QtWidgets.QVBoxLayout(self.page_2)
@@ -769,6 +779,9 @@ class Ui_MainWindow(object):
 "}\n"
 "#userAddBtn:pressed{\n"
 "    background-color: rgb(0, 108, 45);\n"
+"}\n"
+"QAbstractItemView {\n"
+"font: bold 10pt \"DengXian\";\n"
 "}")
         self.page_5.setObjectName("page_5")
         self.verticalLayout_10 = QtWidgets.QVBoxLayout(self.page_5)
@@ -816,12 +829,14 @@ class Ui_MainWindow(object):
         self.stackedWidget.addWidget(self.page_5)
         self.verticalLayout_5.addWidget(self.stackedWidget)
         self.horizontalLayout.addWidget(self.frame_2)
+        self.horizontalLayout.setStretch(0, 1)
+        self.horizontalLayout.setStretch(1, 5)
         self.horizontalLayout_9.addWidget(self.frame_3)
         self.verticalLayout_11.addWidget(self.frame)
         MainWindow.setCentralWidget(self.centralwidget)
 
         self.retranslateUi(MainWindow)
-        self.stackedWidget.setCurrentIndex(4)
+        self.stackedWidget.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
