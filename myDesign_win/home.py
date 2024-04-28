@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(1355, 901)
+        MainWindow.resize(1363, 901)
         MainWindow.setStyleSheet("*{background-color: rgb(255, 255, 255);}\n"
 "QFrame#frame{background-color: rgb(86, 109, 151);}\n"
 "/*#frame_2{background-color: rgb(238, 241, 246);}*/\n"
@@ -41,6 +41,7 @@ class Ui_MainWindow(object):
 "    border-radius: 18px;\n"
 "    background-color: rgb(0, 151, 63);\n"
 "    font: 87 12pt \"Source Han Serif SC Heavy\";\n"
+"    font: 12pt \"方正粗黑宋简体\";\n"
 "    color: rgba(255, 255, 255, 220);\n"
 "}\n"
 "#btnLoadData:hover{\n"
@@ -204,6 +205,7 @@ class Ui_MainWindow(object):
         self.frame_4.setFrameShadow(QtWidgets.QFrame.Raised)
         self.frame_4.setObjectName("frame_4")
         self.verticalLayout_9 = QtWidgets.QVBoxLayout(self.frame_4)
+        self.verticalLayout_9.setContentsMargins(0, 0, 0, 0)
         self.verticalLayout_9.setObjectName("verticalLayout_9")
         self.softwareNameLabel = QtWidgets.QLabel(self.frame_4)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
@@ -211,6 +213,8 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.softwareNameLabel.sizePolicy().hasHeightForWidth())
         self.softwareNameLabel.setSizePolicy(sizePolicy)
+        self.softwareNameLabel.setText("")
+        self.softwareNameLabel.setPixmap(QtGui.QPixmap(":/login/icon/applabel.png"))
         self.softwareNameLabel.setObjectName("softwareNameLabel")
         self.verticalLayout_9.addWidget(self.softwareNameLabel)
         self.verticalLayout.addWidget(self.frame_4, 0, QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
@@ -289,6 +293,7 @@ class Ui_MainWindow(object):
         self.maxiButton.setIcon(icon1)
         self.maxiButton.setIconSize(QtCore.QSize(30, 30))
         self.maxiButton.setCheckable(True)
+        self.maxiButton.setChecked(False)
         self.maxiButton.setObjectName("maxiButton")
         self.horizontalLayout_2.addWidget(self.maxiButton)
         self.closeButton = QtWidgets.QPushButton(self.titleGroupBox)
@@ -504,6 +509,7 @@ class Ui_MainWindow(object):
         self.btn_play.setIcon(icon3)
         self.btn_play.setIconSize(QtCore.QSize(30, 30))
         self.btn_play.setCheckable(True)
+        self.btn_play.setChecked(False)
         self.btn_play.setObjectName("btn_play")
         self.horizontalLayout_3.addWidget(self.btn_play)
         self.btn_stop = QtWidgets.QPushButton(self.groupBox_6)
@@ -636,6 +642,7 @@ class Ui_MainWindow(object):
 "    border-radius: 18px;\n"
 "    background-color: rgb(255, 126, 45);\n"
 "    font: 87 12pt \"Source Han Serif SC Heavy\";\n"
+"    font: 12pt \"方正粗黑宋简体\";\n"
 "    color: rgba(255, 255, 255, 220);\n"
 "}\n"
 "#queryButton:hover{\n"
@@ -771,6 +778,7 @@ class Ui_MainWindow(object):
 "    border-radius: 18px;\n"
 "    background-color: rgb(0, 151, 63);\n"
 "    font: 87 12pt \"Source Han Serif SC Heavy\";\n"
+"    font: 12pt \"方正粗黑宋简体\";\n"
 "    color: rgba(255, 255, 255, 220);\n"
 "}\n"
 "#userAddBtn:hover{\n"
@@ -836,13 +844,12 @@ class Ui_MainWindow(object):
         MainWindow.setCentralWidget(self.centralwidget)
 
         self.retranslateUi(MainWindow)
-        self.stackedWidget.setCurrentIndex(0)
+        self.stackedWidget.setCurrentIndex(4)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
-        self.softwareNameLabel.setText(_translate("MainWindow", "FamilyGuard"))
         self.page1Button.setText(_translate("MainWindow", "监 控 画 面"))
         self.page2Button.setText(_translate("MainWindow", "报 警 记 录"))
         self.page4Button.setText(_translate("MainWindow", "回 放 查 询"))

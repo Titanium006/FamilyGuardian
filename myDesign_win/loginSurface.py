@@ -158,7 +158,9 @@ class Ui_Dialog(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.appNameLabel.sizePolicy().hasHeightForWidth())
         self.appNameLabel.setSizePolicy(sizePolicy)
-        self.appNameLabel.setMinimumSize(QtCore.QSize(182, 0))
+        self.appNameLabel.setMinimumSize(QtCore.QSize(224, 0))
+        self.appNameLabel.setText("")
+        self.appNameLabel.setPixmap(QtGui.QPixmap(":/login/icon/applabel.png"))
         self.appNameLabel.setObjectName("appNameLabel")
         self.horizontalLayout_4.addWidget(self.appNameLabel)
         spacerItem = QtWidgets.QSpacerItem(200, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
@@ -254,7 +256,6 @@ class Ui_Dialog(object):
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
         Dialog.setWindowTitle(_translate("Dialog", "Dialog"))
-        self.appNameLabel.setText(_translate("Dialog", "FamilyGuard"))
         self.userNameLabel.setText(_translate("Dialog", " 用户名:"))
         self.passwordLabel.setText(_translate("Dialog", " 密 码"))
         self.loginButton.setText(_translate("Dialog", "登 录"))

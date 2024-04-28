@@ -40,6 +40,7 @@ QLabel#softwareNameLabel{
 	border-radius: 18px;
 	background-color: rgb(0, 151, 63);
 	font: 87 12pt &quot;Source Han Serif SC Heavy&quot;;
+	font: 12pt &quot;方正粗黑宋简体&quot;;
 	color: rgba(255, 255, 255, 220);
 }
 #btnLoadData:hover{
@@ -273,6 +274,18 @@ QPushButton#page1Button{
                 <enum>QFrame::Raised</enum>
                </property>
                <layout class="QVBoxLayout" name="verticalLayout_9">
+                <property name="leftMargin">
+                 <number>0</number>
+                </property>
+                <property name="topMargin">
+                 <number>0</number>
+                </property>
+                <property name="rightMargin">
+                 <number>0</number>
+                </property>
+                <property name="bottomMargin">
+                 <number>0</number>
+                </property>
                 <item>
                  <widget class="QLabel" name="softwareNameLabel">
                   <property name="sizePolicy">
@@ -282,7 +295,10 @@ QPushButton#page1Button{
                    </sizepolicy>
                   </property>
                   <property name="text">
-                   <string>FamilyGuard</string>
+                   <string/>
+                  </property>
+                  <property name="pixmap">
+                   <pixmap resource="../apprcc.qrc">:/login/icon/applabel.png</pixmap>
                   </property>
                  </widget>
                 </item>
@@ -543,7 +559,7 @@ background-color: rgb(157, 157, 157);
 }</string>
                </property>
                <property name="currentIndex">
-                <number>2</number>
+                <number>4</number>
                </property>
                <widget class="QWidget" name="page">
                 <layout class="QVBoxLayout" name="verticalLayout_8">
@@ -1240,6 +1256,7 @@ QSlider::sub-page:horizontal{
 	border-radius: 18px;
 	background-color: rgb(255, 126, 45);
 	font: 87 12pt &quot;Source Han Serif SC Heavy&quot;;
+	font: 12pt &quot;方正粗黑宋简体&quot;;
 	color: rgba(255, 255, 255, 220);
 }
 #queryButton:hover{
@@ -1476,6 +1493,7 @@ color: rgb(200, 200, 200);
 	border-radius: 18px;
 	background-color: rgb(0, 151, 63);
 	font: 87 12pt &quot;Source Han Serif SC Heavy&quot;;
+	font: 12pt &quot;方正粗黑宋简体&quot;;
 	color: rgba(255, 255, 255, 220);
 }
 #userAddBtn:hover{

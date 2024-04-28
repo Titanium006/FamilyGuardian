@@ -85,7 +85,7 @@ class DetThread(QThread):
         self.conn = sql.connect(os.path.join(self.dataBaseName),
                                 isolation_level=None, uri=True, check_same_thread=False)
         c = self.conn.cursor()
-        c.execute('SELECT COUNT(*) FROM testInsert')
+        c.execute('SELECT COUNT(*) FROM alarmRecord')
         self.curInsertID = c.fetchone()[0] + 1
 
     def run(self):
@@ -312,7 +312,7 @@ class DetThread(QThread):
         print('Ready to write {}!'.format(filepath))
         if (cls == '0') or (cls == '1') or (cls == '2' and self.checkingStranger):
             c = self.conn.cursor()
-            c.execute("INSERT INTO testInsert (id, startTime, endTime, alarmType, camNo) VALUES (?, ?, ?, ?, ?)",
+            c.execute("INSERT INTO alarmRecord (id, startTime, endTime, alarmType, camNo) VALUES (?, ?, ?, ?, ?)",
                       (str(self.curInsertID), start_time_str, end_time_str, str(cls), str(self.source)))
             self.conn.commit()
             self.curInsertID += 1
@@ -408,6 +408,7 @@ class MainWindow(QMainWindow):
             dateFolder = dateFolder[0] + dateFolder[1] + dateFolder[2]
             alarmEndTime = str(infoGroup[1]).split(' ')[1]
             alarmStartTime = datetime.strptime(alarmStartTime, "%H:%M:%S")
+            alarmDeltaStartTime = alarmStartTime + timedelta(seconds=3)
             alarmEndTime = datetime.strptime(alarmEndTime, "%H:%M:%S")
             data = os.path.join(self.videoFileSaveFolder, dateFolder)
             print('Path is ' + data)
@@ -419,7 +420,8 @@ class MainWindow(QMainWindow):
                     myTimeList = basename.split('_')
                     videoStartTime = datetime.strptime(myTimeList[1], "%H-%M-%S")
                     videoEndTime = datetime.strptime(myTimeList[3], "%H-%M-%S")
-                    if videoStartTime.time() <= alarmStartTime.time() <= alarmEndTime.time() <= videoEndTime.time():
+                    if videoStartTime.time() <= alarmStartTime.time() <= alarmEndTime.time() <= videoEndTime.time()\
+                            or videoStartTime.time() <= alarmDeltaStartTime.time() <= alarmEndTime.time() <= videoEndTime.time():
                         findOne = True
                         jumpSec = int((alarmStartTime - videoStartTime).total_seconds())
                         self.rtPageIndex = 1
@@ -541,7 +543,7 @@ class MainWindow(QMainWindow):
         # 检查当前的插入id号, 分(满)和(不满)两种情况处理
         if self.totalLinesCnt < self.threshold:  # 小于阈值, 正常加载数据
             # 这里应该是设置从pageIndex*self.alarmRowCount的位置开始读取self.alarmRowCount个    或许还是设计一个当前读取到的坐标(指针)比较好
-            c.execute("SELECT startTime, endTime, alarmType, camNo FROM testInsert ORDER BY id DESC LIMIT ? OFFSET ?",
+            c.execute("SELECT startTime, endTime, alarmType, camNo FROM alarmRecord ORDER BY id DESC LIMIT ? OFFSET ?",
                       (self.alarmRowCount,
                        self.alarmRowCount * (pageIndex - 1)))
             rows = c.fetchall()
@@ -558,7 +560,7 @@ class MainWindow(QMainWindow):
 
     def BtnLoadDataClick(self):
         c = self.conn.cursor()
-        c.execute("SELECT COUNT(*) FROM testInsert")
+        c.execute("SELECT COUNT(*) FROM alarmRecord")
         self.totalLinesCnt = c.fetchone()[0]
         self.pageTable.pageWidget.setMaxPage(math.ceil(self.totalLinesCnt / self.alarmRowCount))
         # print(type(self.pageTable.pageWidget))
@@ -576,14 +578,6 @@ class MainWindow(QMainWindow):
         # print("volume %f" % volume)
         self.player.setVolume(volume)
         self.ui.lab_audio.setText("volume:" + str(volume) + "%")
-
-    # def clickedSlider(self, position):
-    #     if self.player.duration() > 0:
-    #         video_position = int((position / 100) * self.player.duration())
-    #         self.player.setPosition(video_position)
-    #         self.ui.lab_video.setText("%.2f%%" % position)
-    #     else:
-    #         self.ui.sld_video.setValue(0)
 
     def clickedSlider(self, position):
         if self.player.duration() > 0:
@@ -688,6 +682,9 @@ class MainWindow(QMainWindow):
         self.ui.stackedWidget.installEventFilter(self)
         self.m_flag = False
         self.direction = None
+        # pixmap = QPixmap(':/login/icon/applabel.png')
+        # pixmap.scaled(250, 25)
+        # self.ui.softwareNameLabel.setPixmap(pixmap)
 
     def _initDatabase(self):
         self.dataBaseName = 'myDB.db'
@@ -1038,15 +1035,15 @@ class registerDialog(QDialog):
         self.ui.regisCloseButton.clicked.connect(self.reject)  # 这里要设置让后面的东西别出来了
         self.ui.userNameEdit.setValidator(self.userNameValidator)
         self.ui.userNameEdit.installEventFilter(self.userNameValidator)
-        self.ui.userNameEdit.setPlaceholderText('6-12个英文/数字组合')
+        # self.ui.userNameEdit.setPlaceholderText('6-12个英文/数字组合')
         self.ui.passwordEdit.setEchoMode(QLineEdit.Password)
         self.ui.passwordEdit.setValidator(self.userPasswordValidator)
         self.ui.passwordEdit.installEventFilter(self.userPasswordValidator)
-        self.ui.passwordEdit.setPlaceholderText('8-16个英文/数字组合(至少一个英文大小写加数字)')
+        # self.ui.passwordEdit.setPlaceholderText('8-16个英文/数字组合(至少一个英文大小写加数字)')
         self.ui.passwordConfirmEdit.setValidator(self.userPasswordValidator)
         self.ui.passwordConfirmEdit.installEventFilter(self.userPasswordValidator)
         self.ui.passwordConfirmEdit.setEchoMode(QLineEdit.Password)
-        self.ui.passwordConfirmEdit.setPlaceholderText('与第一次的输入保持一致')
+        # self.ui.passwordConfirmEdit.setPlaceholderText('与第一次的输入保持一致')
         self.ui.registerButton.clicked.connect(self.register)
         self.dataBaseName = 'myDB.db'
         self.conn = sql.connect(self.dataBaseName, isolation_level=None, uri=True)  # 启用WAL模式
@@ -1113,6 +1110,9 @@ class loginDialog(QDialog):
         self.tryLoginTimes = 4
         self.dataBaseName = 'myDB.db'
         self.conn = sql.connect(self.dataBaseName, isolation_level=None, uri=True)
+        # pixmap = QPixmap(':/login/icon/applabel.png')
+        # pixmap.scaled(250, 25)
+        # self.ui.appNameLabel.setPixmap(pixmap)
 
     def check(self):
         # print('Enter Check!')
@@ -1224,6 +1224,8 @@ class Controller:
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
+    appIcon = QIcon(':/home/icon/3 监察.png')
+    app.setWindowIcon(appIcon)
     controller = Controller()
     if controller.openLoginSurface():
         # print('Enter MainWindow()!')

@@ -219,12 +219,15 @@ QLineEdit{
               </property>
               <property name="minimumSize">
                <size>
-                <width>182</width>
+                <width>224</width>
                 <height>0</height>
                </size>
               </property>
               <property name="text">
-               <string>FamilyGuard</string>
+               <string/>
+              </property>
+              <property name="pixmap">
+               <pixmap resource="../apprcc.qrc">:/login/icon/applabel.png</pixmap>
               </property>
              </widget>
             </item>

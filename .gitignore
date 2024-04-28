@@ -9,3 +9,6 @@ data/
 *.png
 *.jpg
 icon/
+LAV Filters/
+dist/
+build/
