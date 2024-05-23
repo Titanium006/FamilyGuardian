@@ -1,4 +1,4 @@
-
+# 导入必要的模块
 from PyQt5 import QtWidgets, QtCore, QtGui
 from PyQt5.QtWidgets import QWidget, QLabel, QHBoxLayout
 from PyQt5.QtCore import QEvent, Qt, pyqtSignal
@@ -7,9 +7,15 @@ from myDesign_win.PageWidget_ui import Ui_PageWidget
 
 
 class PageWidget(QWidget):
+    # 定义一个信号, 当当前页码变化时会发送当前页码
     send_curPage = pyqtSignal(int)
 
     def __init__(self, blockSize=3, parent=None):
+        """
+        初始化PageWidget类的实例
+        :param blockSize: 块大小, 默认为 3
+        :param parent: 父级控件, 默认为None
+        """
         super().__init__(parent)
         self.ui = Ui_PageWidget()
         self.ui.setupUi(self)
@@ -18,14 +24,18 @@ class PageWidget(QWidget):
         self.pageLabels = []
         self.currentPage = 0
         self.setBlockSize(blockSize)
+
+        # 安装事件过滤器和设置输入验证器
         self.ui.pageLineEdit.installEventFilter(self)
         self.ui.pageLineEdit.setValidator(QIntValidator(1, 10000000))
 
+        # 设置分页标签属性和安装事件过滤器
         self.ui.nextPageLabel.setProperty("page", "true")
         self.ui.previousPageLabel.setProperty("page", "true")
         self.ui.nextPageLabel.installEventFilter(self)
         self.ui.previousPageLabel.installEventFilter(self)
 
+        # 创建布局管理器
         leftLayout = QHBoxLayout()
         centerLayout = QHBoxLayout()
         rightLayout = QHBoxLayout()
@@ -36,6 +46,7 @@ class PageWidget(QWidget):
         rightLayout.setContentsMargins(0, 0, 0, 0)
         rightLayout.setSpacing(0)
 
+        # 创建分页标签并添加到布局中
         for i in range(self.blockSize * 3):
             label = QLabel(str(i + 1))
             label.setProperty("page", "true")
@@ -59,6 +70,12 @@ class PageWidget(QWidget):
 
     # def eventFilter(self, watched: 'QObject', e: 'QEvent') -> bool:
     def eventFilter(self, watched, e) -> bool:
+        """
+        事件过滤器, 用于处理鼠标点击和键盘输入事件
+        :param watched:被监视的对香港
+        :param e:事件对象
+        :return:如果事件已处理, 则返回True, 否则返回False
+        """
         if e.type() == QEvent.MouseButtonRelease:
             page = -1
             if watched == self.ui.previousPageLabel:
@@ -84,6 +101,10 @@ class PageWidget(QWidget):
         return super().eventFilter(watched, e)
 
     def updatePageLabels(self):
+        """
+        更新分页标签的显示状态
+        :return:
+        """
         self.ui.leftSeparateLabel.hide()
         self.ui.rightSeparateLabel.hide()
 
@@ -154,6 +175,12 @@ class PageWidget(QWidget):
             self.pageLabels[i].show()
 
     def setCurrentPage(self, page: int, signalEmitted: bool):
+        """
+        设置当前页码并更新分页标签
+        :param page: 目标页码
+        :param signalEmitted: 是否发送信号
+        :return:
+        """
         page = max(page, 1)
         page = min(page, self.maxPage)
 
@@ -165,6 +192,11 @@ class PageWidget(QWidget):
                 self.send_curPage.emit(page)
 
     def setMaxPage(self, page: int):
+        """
+        设置最大页码并更新分页标签
+        :param page: 最大页码
+        :return:
+        """
         page = max(page, 1)
         if self.maxPage != page:
             self.maxPage = page
@@ -172,6 +204,11 @@ class PageWidget(QWidget):
             self.updatePageLabels()
 
     def setBlockSize(self, bSize: int):
+        """
+        设置块大小并确保其为奇数
+        :param bSize: 块大小
+        :return:
+        """
         bSize = max(bSize, 3)
         if bSize % 2 == 0:
             bSize += 1
