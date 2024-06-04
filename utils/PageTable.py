@@ -109,6 +109,8 @@ class PageTable(QVBoxLayout):
         :param dataType: 选择要插入的表格类型, 0表示报警记录表格, 1表示回放记录表格, 2表示用户信息表格
         :return:
         """
+        print(DataList)
+
         iconPath = ''
         iconSize = 1
 

@@ -17,7 +17,7 @@ class MessageBox(QMessageBox):
                  count=0,               # 倒计时计数
                  time=1000,             # 倒计时间隔, 单位毫秒
                  auto=False,            # 是否自动关闭
-                 mode=0,  # 这里用mode来设置展示什么按钮(0:Only Close 1:Yes & No 2:None(配合定时关闭))
+                 mode=0,  # 这里用mode来设置展示什么按钮(0:Only Close 1:Yes & No 2:None(配合定时关闭) 3:Red Alarm)
                  iconpath=':/home/icon/caution.png',    # 图标路径
                  **kwargs):
         """
@@ -27,7 +27,7 @@ class MessageBox(QMessageBox):
         :param count: 倒计时计数, 默认为 0
         :param time: 倒计时间隔, 单位毫秒, 默认为 1000
         :param auto: 是否自动关闭, 默认为 False
-        :param mode: 设置MessageBox展示什么按钮, (0:Only Close 1:Yes & No 2:None(配合定时关闭))
+        :param mode: 设置MessageBox展示什么按钮, (0:Only Close 1:Yes & No 2:None(配合定时关闭) 3:Red Alarm)
         :param iconpath: 图标路径
         :param kwargs:
         """

@@ -13,7 +13,7 @@ from PyQt5.QtCore import QTimer, QDateTime, QUrl, QDate
 from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QDialog, QFileDialog, QGraphicsDropShadowEffect, \
     QMessageBox, QLineEdit, QSizePolicy
 from PyQt5.QtCore import Qt, QThread, pyqtSignal, QObject, QEvent, QRect, QSize
-from PyQt5.QtGui import QImage, QPixmap, QMouseEvent, QEnterEvent, QColor, QCursor, QIcon
+from PyQt5.QtGui import QImage, QPixmap, QMouseEvent, QEnterEvent, QColor, QCursor, QIcon, QGuiApplication
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from myDesign_win.home import Ui_MainWindow
@@ -31,7 +31,10 @@ from ultralytics import YOLO
 from datetime import datetime, timedelta
 
 # 设置这个可以确保屏幕分辨率不影响界面显示
-# QtCore.QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)  我得把注册和登陆页面的宽度再调大一点
+# QtCore.QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)  # 我得把注册和登陆页面的宽度再调大一点
+QGuiApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
+QGuiApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
+QGuiApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
 key = b'mysecretpassword'  # 密钥（需要确保安全）
 
 
@@ -1126,7 +1129,7 @@ class MainWindow(QMainWindow):
             self.searchTable.pageWidget.setCurrentPage(1, True)
             self.LoadSearchPage(1)
         else:
-            MessageBox(text='暂无可查看回放！', mode=0).exec_()
+            MessageBox(text='暂无可查看回放!', mode=0).exec_()
             # QMessageBox.information(self, '', '暂无可查看回放！')
             return
 
@@ -1594,6 +1597,14 @@ class loginDialog(QDialog):
         self.tryLoginTimes = 4  # 初始化尝试登录次数 为4-1=3次
         self.dataBaseName = 'myDB.db'  # 数据库文件名
         self.conn = sql.connect(self.dataBaseName, isolation_level=None, uri=True)
+
+        screen = QGuiApplication.primaryScreen()
+        screen_geometry = screen.geometry()
+        screen_width = screen_geometry.width()
+        screen_height = screen_geometry.height()
+
+        print(f"Screen Resolution: {screen_width}x{screen_height}")
+
         # pixmap = QPixmap(':/login/icon/applabel.png')
         # pixmap.scaled(250, 25)
         # self.ui.appNameLabel.setPixmap(pixmap)
