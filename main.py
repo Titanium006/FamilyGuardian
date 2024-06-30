@@ -11,8 +11,8 @@ import sqlite3 as sql
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import QTimer, QDateTime, QUrl, QDate
 from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QDialog, QFileDialog, QGraphicsDropShadowEffect, \
-    QMessageBox, QLineEdit, QSizePolicy
-from PyQt5.QtCore import Qt, QThread, pyqtSignal, QObject, QEvent, QRect, QSize
+    QMessageBox, QLineEdit, QSizePolicy, QMenu, QAction
+from PyQt5.QtCore import Qt, QThread, pyqtSignal, QObject, QEvent, QRect, QSize, QPoint
 from PyQt5.QtGui import QImage, QPixmap, QMouseEvent, QEnterEvent, QColor, QCursor, QIcon, QGuiApplication
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
@@ -25,13 +25,15 @@ from utils.PageButton import PageButton, UserDelButton
 from utils.encryption import func_encrypt_config, func_decrypt_config
 from utils.lineEditValidator import LineEditValidator
 from utils.CustomMessageBox import MessageBox
+from utils.capnums import Camera
 import apprcc_rc
 
 from ultralytics import YOLO
 from datetime import datetime, timedelta
+import multiprocessing
 
 # 设置这个可以确保屏幕分辨率不影响界面显示
-# QtCore.QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)  # 我得把注册和登陆页面的宽度再调大一点
+# QtCore.QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
 QGuiApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
 QGuiApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
 QGuiApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
@@ -78,14 +80,14 @@ class DetThread(QThread):
     send_infoInsert = pyqtSignal(int)
     send_showWin = pyqtSignal(int)
 
-    def __init__(self, databaseName, threshold=1000):
+    def __init__(self, databaseName, source=0, threshold=1000, checkStranger=True):
         """
         初始化检测线程
         :param databaseName: 数据库文件名
         :param threshold: 数据库存储报警信息条数的阈值, 默认为1000
         """
         super(DetThread, self).__init__()
-        self.source = 0
+        self.source = source
         self.threshold = threshold  # 设置数据库存储报警信息条数的阈值, 超过这个阈值就开始删除老数据
         self.model = YOLO('./pt/best.pt')  # 这个先不改, 看看后面模型放哪先
         self.dataBaseName = databaseName
@@ -94,7 +96,7 @@ class DetThread(QThread):
         self.frameCnt = 0
         self.frame_width = 400
         self.frame_height = 300
-        self.checkingStranger = True  # 默认识别人物
+        self.checkingStranger = checkStranger
         self._initThreadDatabase()
         self._initSaveTime()
 
@@ -110,6 +112,7 @@ class DetThread(QThread):
         os.makedirs(self.save_folder, exist_ok=True)
         # 初始化各类别的计数器和开始时间
         self.detThreshold = 2
+        self.detThresholdEnd = 5
         self.smoke_count = 0
         self.fire_count = 0
         self.person_count = 0
@@ -145,6 +148,9 @@ class DetThread(QThread):
         执行线程的运行逻辑, 处理视频帧并进行物体检测
         :return:
         """
+
+        print('Enter RUN!')
+
         self.cap = cv2.VideoCapture(self.source)    # 打开视频源(摄像头)
         current_time = datetime.now()       # 获取当前时间
         current_time += timedelta(seconds=self.delta)       # 加上时间偏移量
@@ -217,19 +223,23 @@ class DetThread(QThread):
                             self.smoke_end_count += 1
 
                     if self.fire_start_time is not None and self.fire_locked:
+                        # print('Enter if self.fire_start_time is not None and self.fire_locked:')
                         if self.fire_end_time is None:
                             self.fire_end_time = current_frame_time
                         if cls == 1:
+                            # print(f'self.fire_end_count = {self.fire_end_count}')
                             self.fire_end_count += 1
 
                     if self.person_start_time is not None and self.person_locked:
+                        # print('Enter if self.person_start_time is not None and self.person_locked:')
                         if self.person_end_time is None:
                             self.person_end_time = current_frame_time
                         if cls == 2:
+                            # print(f'self.person_end_count = {self.person_end_count}')
                             self.person_end_count += 1
                             # print(self.person_end_count)
 
-                    self.check_reset_end_time(current_frame_time)
+                self.check_reset_end_time(current_frame_time)
 
                 # 在帧上可视化结果
                 annotated_frame = results[0].plot()
@@ -322,10 +332,11 @@ class DetThread(QThread):
         :param current_time: 当前时间
         :return:
         """
+        # print('Enter check_reset_end_time')
         # 添加结束时间处理逻辑
         if self.smoke_end_time is not None:
             if (current_time - self.smoke_end_time).total_seconds() * 1000 >= 1000:
-                if self.smoke_end_count < self.detThreshold:
+                if self.smoke_end_count < self.detThresholdEnd:
                     saved_successfully = self.save_if_threshold_exceeded(self.smoke_count, self.smoke_end_count,
                                                                          self.smoke_start_time,
                                                                          self.smoke_end_time, '0')
@@ -341,8 +352,13 @@ class DetThread(QThread):
                     self.smoke_end_time = None
 
         if self.fire_end_time is not None:
+            # print('Enter if self.fire_end_time is not None:')
+            # print(f'current_time = {current_time}')
+            # print(f'self.fire_end_time = {self.fire_end_time}')
             if (current_time - self.fire_end_time).total_seconds() * 1000 >= 1000:
-                if self.fire_end_count < self.detThreshold:
+                # print('Enter current_time - self.fire_end_time')
+                # print(self.fire_end_count)
+                if self.fire_end_count < self.detThresholdEnd:
                     saved_successfully = self.save_if_threshold_exceeded(self.fire_count, self.fire_end_count,
                                                                          self.fire_start_time,
                                                                          self.fire_end_time, '1')
@@ -358,8 +374,13 @@ class DetThread(QThread):
                     self.fire_end_time = None
 
         if self.person_end_time is not None:
+            # print('Enter if self.person_end_time is not None:')
+            # print(f'current_time = {current_time}')
+            # print(f'self.person_end_time = {self.person_end_time}')
             if (current_time - self.person_end_time).total_seconds() * 1000 >= 1000:
-                if self.person_end_count < self.detThreshold:
+                # print('Enter current_time - self.person_end_time')
+                # print(self.person_end_count)
+                if self.person_end_count < self.detThresholdEnd:
                     saved_successfully = self.save_if_threshold_exceeded(self.person_count, self.person_end_count,
                                                                          self.person_start_time,
                                                                          self.person_end_time, '2')
@@ -386,7 +407,7 @@ class DetThread(QThread):
         """
         # 如果计数器超过阈值
         # print('Enter save_if_threshold_exceeded!')
-        if start_count > self.detThreshold > end_count:
+        if start_count > self.detThreshold and self.detThresholdEnd > end_count:
             start_time_str = start_time.strftime('%Y-%m-%d_%H-%M-%S')
             end_time_str = end_time.strftime('%Y-%m-%d_%H-%M-%S')
             filename = f'{cls}_' + start_time_str + '__' + end_time_str + '.txt'
@@ -418,9 +439,9 @@ class DetThread(QThread):
             self.conn.commit()
             self.curInsertID += 1
             self.send_infoInsert.emit(self.curInsertID % self.threshold)
-        # 将时间戳写入文本文件
-        with open(filepath, 'w') as file:
-            file.write('{} {} {}'.format(cls, start_time_str, end_time_str))
+        # # 将时间戳写入文本文件
+        # with open(filepath, 'w') as file:
+        #     file.write('{} {} {}'.format(cls, start_time_str, end_time_str))
 
     def quit(self) -> None:
         """
@@ -595,7 +616,8 @@ class MainWindow(QMainWindow):
         :return:
         """
         # 退出检测线程
-        self.detThread.quit()
+        if self.detThreadAlive:
+            self.detThread.quit()
 
         # 提示正在关闭程序
         MessageBox(text='正在关闭程序...', auto=True, time=2000, mode=2, iconpath=':/home/icon/bye.png').exec_()
@@ -604,7 +626,6 @@ class MainWindow(QMainWindow):
         self.conn.commit()  # 这里提交用户账号信息的修改, 防止出现同时写的报错和不一致情况
         self.conn.close()
 
-        # 关闭窗口
         # 关闭窗口
         self.close()
 
@@ -946,6 +967,7 @@ class MainWindow(QMainWindow):
         # self.ui.page3Button.clicked.connect(lambda: self.gotoBlock(2))
         self.ui.page4Button.clicked.connect(lambda: self.gotoBlock(3))
         self.ui.page5Button.clicked.connect(lambda: self.gotoBlock(4))
+        self.ui.CameraButton.clicked.connect(self.choose_cam)
         self.ui.titleGroupBox.mouseDoubleClickEvent = self.onTitleBarDoubleClicked
 
         # 设置鼠标跟踪
@@ -1184,6 +1206,52 @@ class MainWindow(QMainWindow):
         timestamp_new = stamplist[0] + ' ' + transformed_timestamp
         return timestamp_new
 
+    def choose_cam(self):
+        # 断开连接检测线程的信号与槽并关闭原来的检测线程
+        if self.detThreadAlive:
+            self.detThread.quit()
+            self.detThreadAlive = False
+        MessageBox(text='正在搜索摄像头...', mode=2, auto=True,
+                   time=2000, iconpath=':/home/icon/Camera.png').exec_()
+
+        _, cams = Camera().get_cam_num()
+        popMenu = QMenu()
+        popMenu.setFixedWidth(self.ui.CameraButton.width())
+        popMenu.setStyleSheet('''
+                                        QMenu {
+                                        font-size: 16px;
+                                        font-family: "Microsoft YaHei UI";
+                                        font-weight: light;
+                                        color:white;
+                                        padding-left: 5px;
+                                        padding-right: 5px;
+                                        padding-top: 4px;
+                                        padding-bottom: 4px;
+                                        border-style: solid;
+                                        border-width: 0px;
+                                        border-color: rgba(255, 255, 255, 255);
+                                        border-radius: 3px;
+                                        background-color: rgba(200, 200, 200,50);}
+                                        ''')
+        for cam in cams:
+            exec("action_%s = QAction('%s')" % (cam, cam))
+            exec("popMenu.addAction(action_%s)" % cam)
+        x = self.ui.titleGroupBox.mapToGlobal(self.ui.CameraButton.pos()).x()
+        y = self.ui.titleGroupBox.mapToGlobal(self.ui.CameraButton.pos()).y()
+        y = y + self.ui.CameraButton.frameGeometry().height()
+        pos = QPoint(x, y)
+        action = popMenu.exec_(pos)
+        if action:
+            self.detThread = DetThread(self.dataBaseName, int(action.text()), self.threshold, self.checkStranger)
+            self.detThreadAlive = True
+            # 连接检测线程的信号与槽
+            self.detThread.send_img.connect(lambda x: self.show_video(x, self.ui.out_video))
+            self.detThread.send_infoInsert.connect(lambda x: self.updateCurInsertID(x))
+            self.detThread.send_showWin.connect(lambda x: self.showAlarmWindow(x))
+
+            # 启动检测线程
+            self.detThread.start()
+
     def _initDetThread(self):
         """
         初始化检测线程
@@ -1192,7 +1260,21 @@ class MainWindow(QMainWindow):
         """
         # detThread
         # 初始化检测线程
-        self.detThread = DetThread(self.dataBaseName, self.threshold)
+        _, cams = Camera().get_cam_num()
+        if len(cams) == 0:
+            # 如果未找到可用摄像头，则关闭程序
+            MessageBox(text='未找到可用摄像头, 正在关闭程序...', auto=True, time=2000, mode=2, iconpath=':/home/icon/bye.png').exec_()
+
+            # 提交数据库事务并关闭连接
+            self.conn.commit()
+            self.conn.close()
+
+            # 关闭窗口
+            self.close()
+            sys.exit()
+        self.checkStranger = True
+        self.detThread = DetThread(self.dataBaseName, cams[0], self.threshold, self.checkStranger)
+        self.detThreadAlive = True
 
         # 连接检测线程的信号与槽
         self.detThread.send_img.connect(lambda x: self.show_video(x, self.ui.out_video))
@@ -1207,7 +1289,7 @@ class MainWindow(QMainWindow):
         """
         显示警报窗口, 根据传入的警报类型显示响应的警报信息
         :param cls: 警报类型, 0表示烟雾, 1表示火焰, 2表示陌生人员闯入
-        :return:
+        :return:admin
         """
         if cls == 0:
             msgBox = MessageBox(text='警告！检测到烟雾！', iconpath=':/home/icon/alarm.png', mode=3).exec_()
@@ -1224,11 +1306,15 @@ class MainWindow(QMainWindow):
         if self.ui.StrangerButton.isChecked():
             print("开启陌生人识别")
             self.ui.StrangerButton.setText("关闭陌生人识别")
-            self.detThread.checkingStranger = True
+            if self.detThreadAlive:
+                self.detThread.checkingStranger = True
+            self.checkStranger = True
         else:
             self.ui.StrangerButton.setText("开启陌生人识别")
             print("关闭陌生人识别")
-            self.detThread.checkingStranger = False
+            if self.detThreadAlive:
+                self.detThread.checkingStranger = False
+            self.checkStranger = False
 
     def _initVideoReplay(self):
         """
@@ -1751,12 +1837,12 @@ class Controller:
 
 
 if __name__ == '__main__':
+    multiprocessing.freeze_support()
     app = QApplication(sys.argv)
-    appIcon = QIcon(':/home/icon/3 监察.png')
+    appIcon = QIcon(':/home/icon/suficon.png')
     app.setWindowIcon(appIcon)
     controller = Controller()
     if controller.openLoginSurface():
-        # print('Enter MainWindow()!')
         Mymainwindow = MainWindow()
         Mymainwindow.show()
     else:

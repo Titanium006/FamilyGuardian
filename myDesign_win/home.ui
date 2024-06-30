@@ -60,6 +60,15 @@ QLabel#softwareNameLabel{
 #StrangerButton:checked{
 	background-color: rgb(186, 38, 38);
 }
+#CameraButton{
+	background-color: rgb(255, 216, 1);
+	background-color: rgb(227, 46, 46);
+	color: rgb(255, 255, 255);
+	border-radius: 18px;
+	font: 11pt &quot;方正粗黑宋简体&quot;;
+}
+#CameraButton:hover{background-color: rgb(199, 41, 41);}
+#CameraButton:pressed{background-color: rgb(186, 38, 38);}
 #maxiButton{
 	border: none;
 	border-radius: 8px;
@@ -474,6 +483,45 @@ QPushButton#page1Button{
                  </widget>
                 </item>
                 <item>
+                 <spacer name="horizontalSpacer_17">
+                  <property name="orientation">
+                   <enum>Qt::Horizontal</enum>
+                  </property>
+                  <property name="sizeType">
+                   <enum>QSizePolicy::Minimum</enum>
+                  </property>
+                  <property name="sizeHint" stdset="0">
+                   <size>
+                    <width>260</width>
+                    <height>20</height>
+                   </size>
+                  </property>
+                 </spacer>
+                </item>
+                <item>
+                 <widget class="QPushButton" name="CameraButton">
+                  <property name="sizePolicy">
+                   <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+                    <horstretch>0</horstretch>
+                    <verstretch>0</verstretch>
+                   </sizepolicy>
+                  </property>
+                  <property name="minimumSize">
+                   <size>
+                    <width>120</width>
+                    <height>0</height>
+                   </size>
+                  </property>
+                  <property name="text">
+                   <string>选择摄像头</string>
+                  </property>
+                  <property name="icon">
+                   <iconset resource="../apprcc.qrc">
+                    <normaloff>:/home/icon/Camera.png</normaloff>:/home/icon/Camera.png</iconset>
+                  </property>
+                 </widget>
+                </item>
+                <item>
                  <spacer name="horizontalSpacer">
                   <property name="orientation">
                    <enum>Qt::Horizontal</enum>
@@ -559,7 +607,7 @@ background-color: rgb(157, 157, 157);
 }</string>
                </property>
                <property name="currentIndex">
-                <number>4</number>
+                <number>0</number>
                </property>
                <widget class="QWidget" name="page">
                 <layout class="QVBoxLayout" name="verticalLayout_8">

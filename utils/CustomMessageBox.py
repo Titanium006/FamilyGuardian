@@ -40,8 +40,8 @@ class MessageBox(QMessageBox):
 
         # 获取当前目录和报警音频文件路径
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        sibling_dir = os.path.join(current_dir, '..', 'media')
-        file_path = os.path.join(sibling_dir, 'Alarm.mp3')
+        media_dir = os.path.join(current_dir, 'media')
+        file_path = os.path.join(media_dir, 'Alarm.mp3')
         file_path = os.path.abspath(file_path)
 
         # 初始化媒体播放器
