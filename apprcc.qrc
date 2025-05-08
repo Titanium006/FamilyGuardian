@@ -1,0 +1,51 @@
+<RCC>
+  <qresource prefix="/login">
+    <file>icon/applabel.png</file>
+    <file>icon/minus.png</file>
+    <file>icon/close.png</file>
+    <file>icon/loginbackground.jpg</file>
+  </qresource>
+  <qresource prefix="/home">
+    <file>icon/suficon.png</file>
+    <file>icon/Camera.png</file>
+    <file>icon/alarm.png</file>
+    <file>icon/3 监察.png</file>
+    <file>icon/bye.png</file>
+    <file>icon/fire.png</file>
+    <file>icon/fog.png</file>
+    <file>icon/people.png</file>
+    <file>icon/good-two.png</file>
+    <file>icon/people-delete-white.png</file>
+    <file>icon/abnormal.png</file>
+    <file>icon/add-mode.png</file>
+    <file>icon/caution.png</file>
+    <file>icon/添加用户_add-user.png</file>
+    <file>icon/用户_user.png</file>
+    <file>icon/go-end.png</file>
+    <file>icon/go-start.png</file>
+    <file>icon/search.png</file>
+    <file>icon/history-query.png</file>
+    <file>icon/calendar.png</file>
+    <file>icon/people-delete.png</file>
+    <file>icon/arrow-right.png</file>
+    <file>icon/右1_right-one.png</file>
+    <file>icon/人员_people_2.png</file>
+    <file>icon/人员屏蔽_people-unknown.png</file>
+    <file>icon/条形图_chart-histogram-two.png</file>
+    <file>icon/刷新_refresh.png</file>
+    <file>icon/dot.png</file>
+    <file>icon/shield.png</file>
+    <file>icon/shield-add.png</file>
+    <file>icon/movie.png</file>
+    <file>icon/stop.png</file>
+    <file>icon/volume-notice.png</file>
+    <file>icon/left.png</file>
+    <file>icon/blackclose.png</file>
+    <file>icon/blackminus.png</file>
+    <file>icon/minus-the-top.png</file>
+    <file>icon/pause-one.png</file>
+    <file>icon/play.png</file>
+    <file>icon/split.png</file>
+    <file>icon/square.png</file>
+  </qresource>
+</RCC>
